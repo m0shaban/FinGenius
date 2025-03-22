@@ -1,7 +1,7 @@
-# FING Project
+# FinGenius Project
 
 ## Description
-This repository contains the FING project, a web application that [brief description of what the application does].
+This repository contains the FinGenius project, a comprehensive financial analysis web application that helps businesses analyze financial statements, create projections, and gain AI-powered insights.
 
 ## Features
 
@@ -22,25 +22,42 @@ git clone https://github.com/m0shaban/FinGenius.git
 # Navigate to the project directory
 cd FinGenius
 
+# Create virtual environment (recommended)
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
 # Install dependencies
-npm install
+pip install -r requirements.txt
 ```
 
 ## Usage
 
 ```bash
+# Set up environment variables
+# Create a .env file with necessary configuration
+
 # Run the development server
-npm run dev
+python run.py
 
-# Build for production
-npm run build
-
-# Start production server
-npm start
+# Or use the toolkit for easier management
+fingenius_toolkit.bat
 ```
 
-## Deployment
-This project is configured for deployment on Render. See the deployment section for more details.
+## Deployment on Render
+This project is configured for deployment on Render. Follow these steps:
+
+1. Push your code to GitHub
+2. Create a new Web Service on Render
+3. Connect to your GitHub repository
+4. Use the following settings:
+   - **Environment**: Python 3
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `gunicorn wsgi:app`
+5. Add the following environment variables:
+   - `SECRET_KEY`: A secure random string
+   - `FLASK_APP`: run.py
+   - `DEEPSEEK_API_KEY`: Your DeepSeek API key (if applicable)
+   - `CLAUDE_API_KEY`: Your Claude API key (if applicable)
 
 ## License
-[Choose appropriate license]
+MIT License

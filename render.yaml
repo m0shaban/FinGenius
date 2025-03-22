@@ -1,9 +1,26 @@
 services:
   - type: web
-    name: fing
-    env: node
-    buildCommand: npm install && npm run build
-    startCommand: npm start
+    name: fingenius
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app
     envVars:
-      - key: NODE_ENV
-        value: production
+      - key: PYTHON_VERSION
+        value: 3.10.0
+      - key: FLASK_APP
+        value: run.py
+      - key: LOG_TO_STDOUT
+        value: true
+      - key: SECRET_KEY
+        fromDatabase:
+          name: fingenius_db
+          property: connection_string
+          
+  - type: redis
+    name: fingenius-cache
+    ipAllowList: []
+    
+databases:
+  - name: fingenius_db
+    databaseName: fingenius
+    user: fingenius
