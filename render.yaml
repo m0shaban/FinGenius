@@ -13,7 +13,11 @@ services:
         value: "true"
       - key: SECRET_KEY
         generateValue: true
-        
+      - key: DATABASE_URL
+        fromDatabase:
+          name: fingenius_db
+          property: connectionString
+          
   - type: redis
     name: fingenius-cache
     ipAllowList: []
