@@ -54,10 +54,17 @@ This project is configured for deployment on Render. Follow these steps:
    - **Build Command**: `pip install -r requirements.txt`
    - **Start Command**: `gunicorn wsgi:app`
 5. Add the following environment variables:
-   - `SECRET_KEY`: A secure random string
+   - `SECRET_KEY`: A secure random string (or let Render generate one)
    - `FLASK_APP`: run.py
+   - `LOG_TO_STDOUT`: true
    - `DEEPSEEK_API_KEY`: Your DeepSeek API key (if applicable)
    - `CLAUDE_API_KEY`: Your Claude API key (if applicable)
+
+#### Troubleshooting Deployment
+If you encounter deployment issues:
+1. Check the application logs in Render dashboard
+2. Verify that the wsgi.py file correctly imports and creates your Flask application
+3. Ensure all required environment variables are set
 
 ## License
 MIT License

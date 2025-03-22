@@ -10,12 +10,10 @@ services:
       - key: FLASK_APP
         value: run.py
       - key: LOG_TO_STDOUT
-        value: true
+        value: "true"
       - key: SECRET_KEY
-        fromDatabase:
-          name: fingenius_db
-          property: connection_string
-          
+        generateValue: true
+        
   - type: redis
     name: fingenius-cache
     ipAllowList: []
