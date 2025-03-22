@@ -17,10 +17,10 @@ This repository contains the FING project, a web application that [brief descrip
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/fing.git
+git clone https://github.com/m0shaban/FinGenius.git
 
 # Navigate to the project directory
-cd fing
+cd FinGenius
 
 # Install dependencies
 npm install
