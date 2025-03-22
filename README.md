@@ -51,11 +51,12 @@ This project is configured for deployment on Render. Follow these steps:
 3. Connect to your GitHub repository
 4. Use the following settings:
    - **Environment**: Python 3
-   - **Build Command**: `pip install -r requirements.txt`
+   - **Build Command**: `bash build.sh`
    - **Start Command**: `gunicorn wsgi:app`
 5. Add the following environment variables:
    - `SECRET_KEY`: A secure random string (or let Render generate one)
    - `FLASK_APP`: run.py
+   - `FLASK_DEBUG`: false
    - `LOG_TO_STDOUT`: true
    - `DEEPSEEK_API_KEY`: Your DeepSeek API key (if applicable)
    - `CLAUDE_API_KEY`: Your Claude API key (if applicable)
@@ -63,8 +64,25 @@ This project is configured for deployment on Render. Follow these steps:
 #### Troubleshooting Deployment
 If you encounter deployment issues:
 1. Check the application logs in Render dashboard
-2. Verify that the wsgi.py file correctly imports and creates your Flask application
+2. Verify that all dependencies are installed by running `python healthcheck.py`
 3. Ensure all required environment variables are set
+4. Common issues:
+   - Missing dependencies in requirements.txt
+   - Database configuration issues
+   - File permission problems with upload directories
+   - Flask factory pattern issues with Gunicorn
+
+#### Development vs Production
+In development:
+- Use `python run.py` for local testing
+- Set `FLASK_DEBUG=1` for debugging features
+- SQLite database is used by default
+
+In production:
+- Gunicorn serves the application
+- Debug mode is disabled
+- PostgreSQL database can be configured using `DATABASE_URL`
+- Logs are sent to stdout
 
 ## License
 MIT License

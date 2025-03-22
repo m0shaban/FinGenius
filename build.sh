@@ -1,20 +1,22 @@
-#!/usr/bin/env bash
-# Exit on error
-set -o errexit
+#!/bin/bash
 
-# Install dependencies
-pip install -r requirements.txt
+# إظهار البيئة الحالية
+echo "Python version: $(python --version)"
+echo "Pip version: $(pip --version)"
 
-# Create instance directory if it doesn't exist
-mkdir -p instance
+# تثبيت الحزم بشكل صريح وباستخدام خيارات إضافية
+pip install --no-cache-dir -r requirements.txt
 
-# Create uploads directory if it doesn't exist
+# تثبيت Flask-WTF بشكل منفصل لضمان تثبيته
+pip install --no-cache-dir Flask-WTF==1.2.1 WTForms==3.1.0
+
+# التحقق من تثبيت الحزم
+pip list | grep -E 'Flask|WTF'
+
+# إنشاء مجلد التحميلات إذا لم يكن موجودًا
 mkdir -p uploads
 
-# Initialize database
+# إعداد قاعدة البيانات
 python -c "from app import create_app, db; app = create_app(); app.app_context().push(); db.create_all()"
 
-# Run database migrations if migrations directory exists
-if [ -d "migrations" ]; then
-  flask db upgrade
-fi
+echo "Build completed successfully"
