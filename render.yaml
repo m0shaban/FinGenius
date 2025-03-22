@@ -17,6 +17,13 @@ services:
         fromDatabase:
           name: fingenius_db
           property: connectionString
+    # Add health check to ensure the service is properly running
+    healthCheckPath: /auth/login
+    # Ensure uploads directory exists and is persistent
+    disk:
+      name: uploads
+      mountPath: /opt/render/project/src/uploads
+      sizeGB: 1
           
   - type: redis
     name: fingenius-cache
@@ -26,3 +33,8 @@ databases:
   - name: fingenius_db
     databaseName: fingenius
     user: fingenius
+
+disks:
+  - name: uploads
+    mountPath: /opt/render/project/src/uploads
+    sizeGB: 1
