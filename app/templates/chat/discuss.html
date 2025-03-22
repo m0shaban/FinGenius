@@ -1,0 +1,384 @@
+{% extends "base.html" %}
+
+{% block title %}AI Chat: {{ file.filename }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('core.dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('core.view_file', file_id=file.id) }}">{{ file.filename }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">AI Chat</li>
+            </ol>
+        </nav>
+        <h1>fingenius Financial Assistant</h1>
+        <p>Ask questions about your financial data in {{ file.filename }}</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- Chat Interface -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Chat with AI Assistant</h5>
+                <button class="btn btn-sm btn-outline-secondary" id="refreshBtn" title="Refresh Chat">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div id="chatMessages" class="chat-messages" style="height: 450px; overflow-y: auto; padding: 15px;">
+                    <div class="system-message mb-3">
+                        <p>Hello! I'm your fingenius financial assistant. I can help analyze <strong>{{ file.filename }}</strong> and answer questions about:</p>
+                        <ul>
+                            <li>Key financial metrics and trends</li>
+                            <li>Performance analysis</li>
+                            <li>Opportunities for improvement</li>
+                            <li>Financial recommendations</li>
+                        </ul>
+                        <p>What would you like to know about your data?</p>
+                    </div>
+                    <!-- Chat messages will be inserted here by JavaScript -->
+                </div>
+                
+                <div class="border-top p-3">
+                    <form id="chatForm" class="chat-input">
+                        <input type="hidden" id="fileId" value="{{ file.id }}">
+                        <div class="input-group">
+                            <input type="text" id="questionInput" class="form-control" placeholder="Ask a question about your financial data...">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-paper-plane"></i> Send
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- File Information and Suggested Questions -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>File Information</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Filename:</strong> {{ file.filename }}</p>
+                <p><strong>Uploaded:</strong> {{ file.upload_date.strftime('%Y-%m-%d') }}</p>
+                
+                {% if file_stats %}
+                    {% if file_stats.error %}
+                        <p class="text-danger">Error reading file: {{ file_stats.error }}</p>
+                    {% else %}
+                        <p><strong>Rows:</strong> {{ file_stats.rows }}</p>
+                        <p><strong>Columns:</strong> {{ file_stats.columns|length }}</p>
+                        <p><strong>Date Range:</strong> {{ file_stats.date_range }}</p>
+                    {% endif %}
+                {% endif %}
+                
+                <button id="getInsightsBtn" class="btn btn-outline-primary btn-sm w-100 mt-2">
+                    <i class="fas fa-lightbulb"></i> Generate Insights with fingenius Reasoning
+                </button>
+            </div>
+        </div>
+    
+        <div class="card">
+            <div class="card-header">
+                <h5>Suggested Questions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary suggested-question">
+                        What are the key financial metrics from this data?
+                    </button>
+                    <button class="btn btn-outline-primary suggested-question">
+                        What trends do you see in the revenue over time?
+                    </button>
+                    <button class="btn btn-outline-primary suggested-question">
+                        What's the relationship between revenue and expenses?
+                    </button>
+                    <button class="btn btn-outline-primary suggested-question">
+                        Which months showed the best performance?
+                    </button>
+                    <button class="btn btn-outline-primary suggested-question">
+                        What areas need improvement based on these numbers?
+                    </button>
+                    <button class="btn btn-outline-primary suggested-question">
+                        Can you provide recommendations for improving profitability?
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chatForm = document.getElementById('chatForm');
+    const chatMessages = document.getElementById('chatMessages');
+    const questionInput = document.getElementById('questionInput');
+    const fileId = document.getElementById('fileId').value;
+    const getInsightsBtn = document.getElementById('getInsightsBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    
+    // Load chat history
+    fetchChatHistory();
+    
+    // Handle form submission
+    chatForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const question = questionInput.value.trim();
+        if (!question) return;
+        
+        // Add user message
+        addMessage(question, 'user');
+        questionInput.value = '';
+        
+        // Show typing indicator
+        const typingIndicator = addTypingIndicator();
+        
+        try {
+            const response = await fetch('{{ url_for("chat.ask") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `file_id=${fileId}&question=${encodeURIComponent(question)}`
+            });
+            
+            const data = await response.json();
+            
+            // Remove typing indicator
+            typingIndicator.remove();
+            
+            if (data.error) {
+                addMessage(`Error: ${data.error}`, 'system');
+            } else {
+                addMessage(data.response, 'ai');
+            }
+        } catch (error) {
+            // Remove typing indicator
+            typingIndicator.remove();
+            addMessage('Sorry, there was an error processing your request.', 'system');
+        }
+    });
+    
+    // Generate AI insights
+    getInsightsBtn.addEventListener('click', async function() {
+        try {
+            getInsightsBtn.disabled = true;
+            getInsightsBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+            
+            const response = await fetch(`{{ url_for("chat.get_insights", file_id=file.id) }}`);
+            const data = await response.json();
+            
+            if (data.error) {
+                addMessage(`Error: ${data.error}`, 'system');
+            } else {
+                addMessage("Here are some insights about your data:", 'system');
+                addMessage(data.insights, 'ai');
+            }
+        } catch (error) {
+            addMessage('Sorry, there was an error generating insights.', 'system');
+        } finally {
+            getInsightsBtn.disabled = false;
+            getInsightsBtn.innerHTML = '<i class="fas fa-lightbulb"></i> Generate Insights with DeepSeek Reasoning';
+        }
+    });
+    
+    // Handle suggested questions
+    document.querySelectorAll('.suggested-question').forEach(button => {
+        button.addEventListener('click', function() {
+            questionInput.value = this.textContent.trim();
+            chatForm.dispatchEvent(new Event('submit'));
+        });
+    });
+    
+    // Refresh chat history
+    refreshBtn.addEventListener('click', function() {
+        chatMessages.innerHTML = '';
+        fetchChatHistory();
+    });
+    
+    // Fetch chat history
+    async function fetchChatHistory() {
+        try {
+            const response = await fetch(`{{ url_for("chat.chat_history", file_id=file.id) }}`);
+            const data = await response.json();
+            
+            if (data.history && data.history.length > 0) {
+                // Add welcome message first
+                const welcomeMsg = document.createElement('div');
+                welcomeMsg.className = 'system-message mb-3';
+                welcomeMsg.innerHTML = `
+                    <p>Hello! I'm your DeepSeek financial assistant. I can help analyze <strong>{{ file.filename }}</strong> and answer questions about:</p>
+                    <ul>
+                        <li>Key financial metrics and trends</li>
+                        <li>Performance analysis</li>
+                        <li>Opportunities for improvement</li>
+                        <li>Financial recommendations</li>
+                    </ul>
+                    <p>What would you like to know about your data?</p>
+                `;
+                chatMessages.innerHTML = '';
+                chatMessages.appendChild(welcomeMsg);
+                
+                // Add chat history
+                data.history.forEach(item => {
+                    addMessage(item.question, 'user');
+                    if (item.response) {
+                        addMessage(item.response, 'ai');
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching chat history:', error);
+        }
+    }
+    
+    // Add message to chat
+    function addMessage(content, type) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${type}-message mb-3`;
+        
+        if (type === 'ai' || type === 'system') {
+            // For AI messages, use markdown rendering
+            messageDiv.innerHTML = marked.parse(content);
+        } else {
+            // For user messages, just use text
+            messageDiv.textContent = content;
+        }
+        
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return messageDiv;
+    }
+    
+    // Add typing indicator
+    function addTypingIndicator() {
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'typing-indicator mb-3';
+        typingDiv.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+        chatMessages.appendChild(typingDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return typingDiv;
+    }
+});
+</script>
+
+<style>
+.chat-messages {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+}
+
+.message {
+    padding: 10px 15px;
+    border-radius: 10px;
+    max-width: 80%;
+    position: relative;
+}
+
+.user-message {
+    background: #007bff;
+    color: white;
+    margin-left: auto;
+    border-bottom-right-radius: 0.25rem;
+}
+
+.ai-message {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-bottom-left-radius: 0.25rem;
+}
+
+.system-message {
+    background: #e9ecef;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 15px;
+    width: 100%;
+}
+
+.suggested-question {
+    text-align: left;
+    white-space: normal;
+    height: auto;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+}
+
+.typing-indicator {
+    display: flex;
+    padding: 10px 15px;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    width: fit-content;
+}
+
+.typing-indicator .dot {
+    width: 8px;
+    height: 8px;
+    background: #999;
+    border-radius: 50%;
+    margin: 0 3px;
+    animation: typingAnimation 1s infinite;
+}
+
+.typing-indicator .dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-indicator .dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typingAnimation {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+/* Style for markdown rendered content */
+.ai-message h1, .ai-message h2, .ai-message h3 {
+    font-size: 1.2rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.ai-message ul, .ai-message ol {
+    padding-left: 1.5rem;
+}
+
+.ai-message p {
+    margin-bottom: 0.5rem;
+}
+
+.ai-message code {
+    background-color: #f0f0f0;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.ai-message pre {
+    background-color: #f0f0f0;
+    padding: 0.5rem;
+    border-radius: 3px;
+    overflow-x: auto;
+}
+
+.ai-message table {
+    border-collapse: collapse;
+    margin: 0.5rem 0;
+}
+
+.ai-message th, .ai-message td {
+    border: 1px solid #dee2e6;
+    padding: 4px 8px;
+}
+</style>
+{% endblock %}

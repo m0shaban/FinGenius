@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Compare Financial Files{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('core.dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Compare Files</li>
+            </ol>
+        </nav>
+        <h1>Compare Financial Files</h1>
+        <p>Select files to compare their financial data side by side.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Select Files to Compare</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{{ url_for('comparison.compare_files') }}">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Select</th>
+                                    <th>Filename</th>
+                                    <th>Type</th>
+                                    <th>Upload Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for file in files %}
+                                <tr>
+                                    <td>
+                                        <div class="form-check">
+                                            <input class="form-check-input file-checkbox" type="checkbox" name="file_ids" value="{{ file.id }}" id="file{{ file.id }}">
+                                        </div>
+                                    </td>
+                                    <td>{{ file.filename }}</td>
+                                    <td>{{ file.file_type }}</td>
+                                    <td>{{ file.upload_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-info-circle"></i> Select at least two files to compare.
+                    </div>
+
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-primary" id="compareBtn" disabled>
+                            Compare Selected Files
+                        </button>
+                        <a href="{{ url_for('core.dashboard') }}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.file-checkbox');
+    const compareBtn = document.getElementById('compareBtn');
+
+    function updateCompareButton() {
+        const checkedCount = document.querySelectorAll('.file-checkbox:checked').length;
+        compareBtn.disabled = checkedCount < 2;
+    }
+
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateCompareButton);
+    });
+});
+</script>
+{% endblock %}

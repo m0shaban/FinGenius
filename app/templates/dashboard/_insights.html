@@ -1,0 +1,110 @@
+<div class="card shadow-sm h-100">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fas fa-brain text-primary me-2"></i>AI-Powered Insights
+        </h5>
+        <div class="d-flex align-items-center">
+            <div class="insights-loader spinner-border spinner-border-sm text-primary me-2 d-none" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <button class="btn btn-sm btn-outline-primary" id="refreshInsights">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div id="insights-container" class="insights-container">
+            <div class="placeholder-glow mb-4">
+                <div class="d-flex align-items-center mb-3">
+                    <span class="placeholder bg-primary rounded p-2 me-2" style="width: 30px; height: 30px;"></span>
+                    <span class="placeholder col-4"></span>
+                </div>
+                <span class="placeholder col-12"></span>
+                <span class="placeholder col-12"></span>
+                <span class="placeholder col-10"></span>
+            </div>
+            
+            <div class="placeholder-glow mb-4">
+                <div class="d-flex align-items-center mb-3">
+                    <span class="placeholder bg-success rounded p-2 me-2" style="width: 30px; height: 30px;"></span>
+                    <span class="placeholder col-5"></span>
+                </div>
+                <span class="placeholder col-12"></span>
+                <span class="placeholder col-11"></span>
+                <span class="placeholder col-9"></span>
+            </div>
+            
+            <div class="placeholder-glow mb-4">
+                <div class="d-flex align-items-center mb-3">
+                    <span class="placeholder bg-warning rounded p-2 me-2" style="width: 30px; height: 30px;"></span>
+                    <span class="placeholder col-3"></span>
+                </div>
+                <span class="placeholder col-12"></span>
+                <span class="placeholder col-12"></span>
+                <span class="placeholder col-8"></span>
+            </div>
+        </div>
+        
+        <div id="insights-error" class="d-none">
+            <div class="text-center py-4">
+                <i class="fas fa-exclamation-triangle text-warning fa-3x mb-3"></i>
+                <h6>Unable to generate insights</h6>
+                <p class="text-muted">We couldn't generate AI insights at this time. Please try again later.</p>
+                <button class="btn btn-outline-primary btn-sm" id="retryInsights">
+                    <i class="fas fa-redo"></i> Retry
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.insight-item {
+    margin-bottom: 1.5rem;
+    animation: fadeIn 0.5s;
+}
+
+.insight-item:last-child {
+    margin-bottom: 0;
+}
+
+.insight-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.insight-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.75rem;
+}
+
+.insight-icon i {
+    font-size: 1rem;
+    color: white;
+}
+
+.insight-title {
+    font-weight: 600;
+    margin-bottom: 0;
+}
+
+.insight-content {
+    padding-left: 3rem;
+    font-size: 0.9rem;
+}
+
+.insight-content p:last-child {
+    margin-bottom: 0;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>

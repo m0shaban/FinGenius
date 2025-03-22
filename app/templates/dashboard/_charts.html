@@ -1,0 +1,110 @@
+<div class="row">
+    <!-- Time Range Filter Controls -->
+    <div class="col-12 mb-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Financial Analytics</h5>
+                    <div class="d-flex align-items-center">
+                        <div class="btn-group me-3" role="group" aria-label="Time range filter">
+                            <button type="button" class="btn btn-outline-primary time-filter active" data-range="month">This Month</button>
+                            <button type="button" class="btn btn-outline-primary time-filter" data-range="quarter">This Quarter</button>
+                            <button type="button" class="btn btn-outline-primary time-filter" data-range="year">This Year</button>
+                            <button type="button" class="btn btn-outline-primary time-filter" data-range="all">All Time</button>
+                        </div>
+                        {% with section="dashboard", id="Charts", kwargs={} %}
+                        {% include "components/_export_buttons.html" %}
+                        {% endwith %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Revenue vs Expenses Chart -->
+    <div class="col-md-8 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Revenue vs Expenses</h5>
+                    <div class="d-flex align-items-center">
+                        <div class="chart-loader spinner-border spinner-border-sm text-primary me-2 d-none" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        {% with section="chart", id="RevenueExpense", include_png=True, chart_id="revenueExpensesChart", kwargs={'type': 'revenue_expenses'} %}
+                        {% include "components/_export_buttons.html" %}
+                        {% endwith %}
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="position: relative; height: 300px;">
+                    <canvas id="revenueExpensesChart"></canvas>
+                </div>
+                <div class="chart-empty-state text-center py-5 d-none">
+                    <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                    <p>No financial data available for the selected period.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Ratios Chart -->
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Financial Ratios</h5>
+                    <div class="d-flex align-items-center">
+                        <div class="chart-loader spinner-border spinner-border-sm text-primary me-2 d-none" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        {% with section="chart", id="FinancialRatios", include_png=True, chart_id="financialRatiosChart", kwargs={'type': 'financial_ratios'} %}
+                        {% include "components/_export_buttons.html" %}
+                        {% endwith %}
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="position: relative; height: 250px;">
+                    <canvas id="financialRatiosChart"></canvas>
+                </div>
+                <div class="chart-empty-state text-center py-5 d-none">
+                    <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                    <p>No ratio data available for the selected period.</p>
+                </div>
+                <div class="ratio-legend mt-3 d-none">
+                    <ul class="list-unstyled mb-0">
+                        <!-- Ratio legend items will be dynamically inserted here -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.chart-container {
+    width: 100%;
+    transition: opacity 0.3s;
+}
+.chart-container.loading {
+    opacity: 0.5;
+}
+.time-filter.active {
+    background-color: #0d6efd;
+    color: white;
+}
+.ratio-legend ul li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+}
+.ratio-legend .color-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+</style>

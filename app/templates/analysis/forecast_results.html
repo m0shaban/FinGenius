@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Forecast Results: {{ file.filename }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('core.dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('core.view_file', file_id=file.id) }}">{{ file.filename }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('analysis.analyze_file', file_id=file.id) }}">Analysis</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Forecast Results</li>
+            </ol>
+        </nav>
+        <h1>Forecast Results</h1>
+        <p>Forecast for {{ column }} from {{ file.filename }}</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Forecast Data</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Future Period</th>
+                                <th>Forecasted {{ column }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in forecast_data %}
+                            <tr>
+                                <td>Period {{ item.period }}</td>
+                                <td>{{ "%.2f"|format(item.forecast) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Forecast Visualization</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="forecastChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Interpretation</h5>
+            </div>
+            <div class="card-body">
+                <p>Based on historical trends in your data, the forecast for <strong>{{ column }}</strong> shows the following:</p>
+                
+                {% set last_value = forecast_data[-1].forecast %}
+                {% set first_value = forecast_data[0].forecast %}
+                {% set growth_rate = ((last_value - first_value) / first_value) * 100 if first_value != 0 else 0 %}
+                
+                <ul>
+                    {% if growth_rate > 0 %}
+                    <li>An <span class="text-success">increasing trend</span> is predicted, with a growth rate of approximately {{ "%.2f"|format(growth_rate) }}% across the forecast period.</li>
+                    {% elif growth_rate < 0 %}
+                    <li>A <span class="text-danger">decreasing trend</span> is predicted, with a decline rate of approximately {{ "%.2f"|format(-growth_rate) }}% across the forecast period.</li>
+                    {% else %}
+                    <li>A <span class="text-warning">stable trend</span> is predicted with minimal change over the forecast period.</li>
+                    {% endif %}
+                </ul>
+                
+                <p><strong>Note:</strong> This forecast is based on a simple linear model. For more accurate forecasts, consider using more advanced forecasting techniques or consulting with a financial analyst.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Next Steps</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2 d-md-flex">
+                    <a href="{{ url_for('analysis.forecast', file_id=file.id) }}" class="btn btn-primary me-2">New Forecast</a>
+                    <a href="#" class="btn btn-success me-2">Export Report</a>
+                    <a href="{{ url_for('analysis.analyze_file', file_id=file.id) }}" class="btn btn-secondary">Back to Analysis</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('forecastChart').getContext('2d');
+    const forecastChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [
+                {% for item in forecast_data %}
+                'Period {{ item.period }}',
+                {% endfor %}
+            ],
+            datasets: [{
+                label: 'Forecasted {{ column }}',
+                data: [
+                    {% for item in forecast_data %}
+                    {{ item.forecast }},
+                    {% endfor %}
+                ],
+                borderColor: 'rgba(75, 192, 192, 1)',
+                tension: 0.1,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: false
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

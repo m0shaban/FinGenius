@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Analysis Results: {{ file.filename }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('core.dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('core.view_file', file_id=file.id) }}">{{ file.filename }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Analysis Results</li>
+            </ol>
+        </nav>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h2 mb-1">Financial Analysis Results</h1>
+                <p class="text-muted">{{ file.filename }} - Analysis date: {{ analysis.created_date.strftime('%Y-%m-%d %H:%M') }}</p>
+            </div>
+            <div class="d-flex">
+                <a href="{{ url_for('core.view_file', file_id=file.id) }}" class="btn btn-outline-secondary me-2">
+                    <i class="fas fa-arrow-left me-1"></i> Back to File
+                </a>
+                {% with section="analysis", id="Results", kwargs={'analysis_id': analysis.id} %}
+                {% include "components/_export_buttons.html" %}
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Financial Ratios -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Financial Ratios</h5>
+                {% with section="chart", id="Ratios", include_png=True, chart_id="financialRatiosChart", kwargs={'type': 'financial_ratios', 'analysis_id': analysis.id} %}
+                {% include "components/_export_buttons.html" %}
+                {% endwith %}
+            </div>
+            <div class="card-body">
+                {% if ratios %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Ratio</th>
+                                <th>Value</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ratio, value in ratios.items() %}
+                            <tr>
+                                <td>{{ ratio|replace('_', ' ')|title }}</td>
+                                <td>{{ "%.2f"|format(value) }}</td>
+                                <td>
+                                    {% if ratio == 'profit_margin' %}
+                                    Percentage of revenue that is profit
+                                    {% elif ratio == 'gross_margin' %}
+                                    Percentage of revenue after cost of goods sold
+                                    {% elif ratio == 'roa' %}
+                                    Return on assets
+                                    {% elif ratio == 'roe' %}
+                                    Return on equity
+                                    {% elif ratio == 'current_ratio' %}
+                                    Current assets divided by current liabilities
+                                    {% elif ratio == 'debt_to_equity' %}
+                                    Total debt divided by equity
+                                    {% else %}
+                                    Financial performance metric
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p>No financial ratios were calculated. This may be due to missing expected columns in your data.</p>
+                <p>For financial ratio analysis, your data should include columns such as:</p>
+                <ul>
+                    <li>Revenue / Income</li>
+                    <li>Net Income / Profit</li>
+                    <li>Total Assets</li>
+                    <li>Liabilities</li>
+                    <li>Equity</li>
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Trends -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Financial Trends</h5>
+            </div>
+            <div class="card-body">
+                {% if trends %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <th>Growth Rate</th>
+                                <th>Trend</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for metric, data in trends.items() %}
+                            <tr>
+                                <td>{{ metric }}</td>
+                                <td>{{ "%.2f"|format(data.growth_rate) }}%</td>
+                                <td>
+                                    {% if data.trend == 'increasing' %}
+                                    <span class="text-success">&#8593; Increasing</span>
+                                    {% else %}
+                                    <span class="text-danger">&#8595; Decreasing</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p>No trends were identified in your data. This may require more data points or properly formatted time series data.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Data Visualization -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Data Visualization</h5>
+            </div>
+            <div class="card-body">
+                {% if charts %}
+                <div class="row">
+                    {% for column, chart in charts.items() %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6>{{ column }} Over Time</h6>
+                            </div>
+                            <div class="card-body">
+                                <img src="{{ chart }}" alt="{{ column }} chart" class="img-fluid">
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p>No charts could be generated from your data.</p>
+                {% endif %}
+                
+                <!-- Correlation Matrix -->
+                {% if correlation_matrix %}
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6>Correlation Matrix</h6>
+                            </div>
+                            <div class="card-body">
+                                <img src="{{ correlation_matrix }}" alt="Correlation Matrix" class="img-fluid">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Next Steps -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Next Steps</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2 d-md-flex">
+                    <a href="{{ url_for('analysis.forecast', file_id=file.id) }}" class="btn btn-primary me-2">Run Financial Forecast</a>
+                    <a href="#" class="btn btn-success me-2">Export Report</a>
+                    <a href="{{ url_for('core.view_file', file_id=file.id) }}" class="btn btn-secondary">Back to File</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

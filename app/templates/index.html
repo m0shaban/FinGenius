@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="jumbotron">
+    <h1 class="display-4">Welcome to FinGenius</h1>
+    <p class="lead">Intelligent financial analysis powered by AI</p>
+    <hr class="my-4">
+    <p>Upload your financial data to get started with analysis, forecasting, and AI-powered insights.</p>
+    <a class="btn btn-primary btn-lg" href="{{ url_for('core.dashboard') }}" role="button">Go to Dashboard</a>
+</div>
+{% endblock %}

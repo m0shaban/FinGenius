@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}Comparison Results{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('core.dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('comparison.select_files') }}">Compare Files</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Results</li>
+            </ol>
+        </nav>
+        <h1>Comparison Results</h1>
+        <p>Comparing {{ files|length }} files:</p>
+        <ul>
+            {% for file in files %}
+            <li>{{ file.filename }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<!-- Statistical Comparison -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Statistical Comparison</h5>
+            </div>
+            <div class="card-body">
+                {% for column, stats in summary_stats.items() %}
+                <div class="mb-4">
+                    <h6>{{ column }}</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    {% for i in range(files|length) %}
+                                    <th>{{ files[i].filename }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Mean</td>
+                                    {% for stat in stats %}
+                                    <td>{{ "%.2f"|format(stat.mean) }}</td>
+                                    {% endfor %}
+                                </tr>
+                                <tr>
+                                    <td>Median</td>
+                                    {% for stat in stats %}
+                                    <td>{{ "%.2f"|format(stat.median) }}</td>
+                                    {% endfor %}
+                                </tr>
+                                <tr>
+                                    <td>Std Dev</td>
+                                    {% for stat in stats %}
+                                    <td>{{ "%.2f"|format(stat.std) }}</td>
+                                    {% endfor %}
+                                </tr>
+                                <tr>
+                                    <td>Min</td>
+                                    {% for stat in stats %}
+                                    <td>{{ "%.2f"|format(stat.min) }}</td>
+                                    {% endfor %}
+                                </tr>
+                                <tr>
+                                    <td>Max</td>
+                                    {% for stat in stats %}
+                                    <td>{{ "%.2f"|format(stat.max) }}</td>
+                                    {% endfor %}
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Percentage Differences -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Percentage Differences</h5>
+            </div>
+            <div class="card-body">
+                {% if differences %}
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                {% for i in range(1, files|length) %}
+                                <th>{{ files[i].filename }} vs {{ files[0].filename }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for column, diffs in differences.items() %}
+                            <tr>
+                                <td>{{ column }}</td>
+                                {% for diff in diffs %}
+                                <td>
+                                    <span class="{{ 'text-success' if diff > 0 else 'text-danger' if diff < 0 else '' }}">
+                                        {{ "%.2f"|format(diff) }}%
+                                        {% if diff > 0 %}↑{% elif diff < 0 %}↓{% endif %}
+                                    </span>
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p>No comparable numeric columns found between the files.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Visualization -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Visual Comparison</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for column, chart in charts.items() %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6>{{ column }}</h6>
+                            </div>
+                            <div class="card-body">
+                                <img src="{{ chart }}" alt="Comparison of {{ column }}" class="img-fluid">
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Correlation Differences -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Correlation Changes</h5>
+            </div>
+            <div class="card-body">
+                {% if correlation_diffs %}
+                {% for key, matrix in correlation_diffs.items() %}
+                <h6>{{ key|replace('_', ' ')|title }}</h6>
+                <div class="table-responsive mb-4">
+                    <table class="table table-sm table-bordered">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                {% for col in matrix.keys() %}
+                                <th>{{ col }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in matrix.keys() %}
+                            <tr>
+                                <th>{{ row }}</th>
+                                {% for col in matrix.keys() %}
+                                <td class="{{ 'table-success' if matrix[row][col] > 0.1 else 'table-danger' if matrix[row][col] < -0.1 }}">
+                                    {{ "%.2f"|format(matrix[row][col]) }}
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p>No correlation differences could be calculated.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Export Options -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Next Steps</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2 d-md-flex">
+                    <a href="{{ url_for('comparison.select_files') }}" class="btn btn-primary me-2">New Comparison</a>
+                    <button class="btn btn-success me-2">Export Report</button>
+                    <a href="{{ url_for('core.dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

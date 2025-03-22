@@ -1,0 +1,525 @@
+<script>
+// SWOT Analysis Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize SWOT Analysis
+    initSwotAnalysis();
+    
+    // Initialize SMART Goals
+    initSmartGoals();
+    
+    // SWOT Analysis Functions
+    function initSwotAnalysis() {
+        // Get elements
+        const editBtn = document.getElementById('editSwotBtn');
+        const saveBtn = document.getElementById('saveSwotBtn');
+        const lastUpdated = document.getElementById('swot-last-updated').querySelector('span');
+        
+        // Check if elements exist (in case SWOT section is not included in the page)
+        if (!editBtn || !saveBtn) return;
+        
+        // Set up event listeners
+        editBtn.addEventListener('click', function() {
+            toggleSwotEditMode(true);
+        });
+        
+        saveBtn.addEventListener('click', function() {
+            saveSwotAnalysis();
+            toggleSwotEditMode(false);
+        });
+        
+        // Load saved SWOT data
+        loadSwotData();
+        
+        // Function to toggle edit mode
+        function toggleSwotEditMode(isEdit) {
+            const viewElements = document.querySelectorAll('.swot-view-mode');
+            const editElements = document.querySelectorAll('.swot-edit-mode');
+            
+            if (isEdit) {
+                // Switch to edit mode
+                viewElements.forEach(el => el.classList.add('d-none'));
+                editElements.forEach(el => el.classList.remove('d-none'));
+                editBtn.classList.add('d-none');
+                saveBtn.classList.remove('d-none');
+                
+                // Populate textareas with current data
+                populateSwotTextareas();
+            } else {
+                // Switch to view mode
+                viewElements.forEach(el => el.classList.remove('d-none'));
+                editElements.forEach(el => el.classList.add('d-none'));
+                editBtn.classList.remove('d-none');
+                saveBtn.classList.add('d-none');
+            }
+        }
+        
+        // Function to populate textareas with current data
+        function populateSwotTextareas() {
+            const categories = ['strengths', 'weaknesses', 'opportunities', 'threats'];
+            
+            categories.forEach(category => {
+                const list = document.getElementById(`${category}-list`);
+                const textarea = document.getElementById(`${category}-textarea`);
+                
+                // Skip if the empty state message is present
+                if (list.querySelector('.swot-empty-state')) {
+                    textarea.value = '';
+                    return;
+                }
+                
+                // Get all list items
+                const items = list.querySelectorAll('li');
+                const itemsText = Array.from(items).map(item => item.textContent);
+                
+                // Join with newlines and set as textarea value
+                textarea.value = itemsText.join('\n');
+            });
+        }
+        
+        // Function to save SWOT analysis
+        function saveSwotAnalysis() {
+            const swotData = {};
+            const categories = ['strengths', 'weaknesses', 'opportunities', 'threats'];
+            
+            // Get data from each textarea
+            categories.forEach(category => {
+                const textarea = document.getElementById(`${category}-textarea`);
+                const lines = textarea.value.split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line !== '');
+                    
+                swotData[category] = lines;
+            });
+            
+            // Add timestamp
+            swotData.lastUpdated = new Date().toISOString();
+            
+            // Save to localStorage
+            try {
+                localStorage.setItem('swotAnalysis', JSON.stringify(swotData));
+                updateSwotDisplay(swotData);
+                lastUpdated.textContent = new Date().toLocaleString();
+            } catch (e) {
+                console.error('Error saving SWOT analysis:', e);
+                alert('Failed to save SWOT analysis. Please try again.');
+            }
+        }
+        
+        // Function to load SWOT data
+        function loadSwotData() {
+            try {
+                const savedData = localStorage.getItem('swotAnalysis');
+                if (savedData) {
+                    const swotData = JSON.parse(savedData);
+                    updateSwotDisplay(swotData);
+                    
+                    // Update last updated timestamp
+                    if (swotData.lastUpdated) {
+                        lastUpdated.textContent = new Date(swotData.lastUpdated).toLocaleString();
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading SWOT data:', e);
+            }
+        }
+        
+        // Function to update SWOT display
+        function updateSwotDisplay(data) {
+            const categories = ['strengths', 'weaknesses', 'opportunities', 'threats'];
+            
+            categories.forEach(category => {
+                const list = document.getElementById(`${category}-list`);
+                const items = data[category] || [];
+                
+                // Clear list
+                list.innerHTML = '';
+                
+                if (items.length === 0) {
+                    // Show empty state
+                    const emptyItem = document.createElement('li');
+                    emptyItem.className = 'swot-empty-state text-muted';
+                    emptyItem.textContent = `No ${category} added yet.`;
+                    list.appendChild(emptyItem);
+                } else {
+                    // Add items to list
+                    items.forEach(item => {
+                        const li = document.createElement('li');
+                        li.textContent = item;
+                        list.appendChild(li);
+                    });
+                }
+            });
+        }
+    }
+    
+    // SMART Goals Functions
+    function initSmartGoals() {
+        // Get elements
+        const addGoalBtn = document.getElementById('addGoalBtn');
+        const saveGoalBtn = document.getElementById('saveGoalBtn');
+        const deleteGoalBtn = document.getElementById('deleteGoalBtn');
+        const goalsList = document.getElementById('smart-goals-list');
+        const noGoalsMsg = document.getElementById('no-goals-message');
+        
+        // Check if elements exist (in case SMART section is not included in the page)
+        if (!addGoalBtn || !saveGoalBtn || !goalsList) return;
+        
+        // Goals array to store all goals
+        let goals = [];
+        
+        // Set up event listeners
+        addGoalBtn.addEventListener('click', function() {
+            // Reset form
+            document.getElementById('smartGoalForm').reset();
+            document.getElementById('goalId').value = '';
+            document.getElementById('goalModalLabel').textContent = 'Add SMART Financial Goal';
+            deleteGoalBtn.classList.add('d-none');
+            
+            // Set default date to 3 months from now
+            const defaultDate = new Date();
+            defaultDate.setMonth(defaultDate.getMonth() + 3);
+            document.getElementById('goalTimebound').valueAsDate = defaultDate;
+            
+            // Show modal
+            const goalModal = new bootstrap.Modal(document.getElementById('goalModal'));
+            goalModal.show();
+        });
+        
+        saveGoalBtn.addEventListener('click', function() {
+            if (validateGoalForm()) {
+                saveGoal();
+                
+                // Hide modal
+                const goalModal = bootstrap.Modal.getInstance(document.getElementById('goalModal'));
+                goalModal.hide();
+            }
+        });
+        
+        deleteGoalBtn.addEventListener('click', function() {
+            const goalId = document.getElementById('goalId').value;
+            if (goalId && confirm('Are you sure you want to delete this goal?')) {
+                deleteGoal(goalId);
+                
+                // Hide modal
+                const goalModal = bootstrap.Modal.getInstance(document.getElementById('goalModal'));
+                goalModal.hide();
+            }
+        });
+        
+        // Load saved goals
+        loadGoals();
+        
+        // Function to validate goal form
+        function validateGoalForm() {
+            const form = document.getElementById('smartGoalForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return false;
+            }
+            
+            // Additional validation
+            const targetAmount = parseFloat(document.getElementById('goalMeasurableAmount').value);
+            const currentAmount = parseFloat(document.getElementById('goalMeasurableCurrent').value);
+            
+            if (currentAmount > targetAmount) {
+                alert('Current progress cannot be greater than the target amount.');
+                return false;
+            }
+            
+            return true;
+        }
+        
+        // Function to save goal
+        function saveGoal() {
+            const goalId = document.getElementById('goalId').value || generateId();
+            const isNewGoal = !document.getElementById('goalId').value;
+            
+            // Create goal object
+            const goal = {
+                id: goalId,
+                title: document.getElementById('goalTitle').value,
+                category: document.getElementById('goalCategory').value,
+                priority: document.getElementById('goalPriority').value,
+                specific: document.getElementById('goalSpecific').value,
+                targetAmount: parseFloat(document.getElementById('goalMeasurableAmount').value),
+                currentAmount: parseFloat(document.getElementById('goalMeasurableCurrent').value),
+                achievable: document.getElementById('goalAchievable').value,
+                relevant: document.getElementById('goalRelevant').value,
+                dueDate: document.getElementById('goalTimebound').value,
+                relatedMetric: document.getElementById('goalRelatedMetric').value,
+                createdDate: isNewGoal ? new Date().toISOString() : getExistingGoal(goalId)?.createdDate || new Date().toISOString(),
+                lastUpdated: new Date().toISOString()
+            };
+            
+            // Add or update goal in array
+            if (isNewGoal) {
+                goals.push(goal);
+            } else {
+                const index = goals.findIndex(g => g.id === goalId);
+                if (index !== -1) {
+                    goals[index] = goal;
+                } else {
+                    goals.push(goal);
+                }
+            }
+            
+            // Save to localStorage
+            try {
+                localStorage.setItem('smartGoals', JSON.stringify(goals));
+                updateGoalsDisplay();
+            } catch (e) {
+                console.error('Error saving goal:', e);
+                alert('Failed to save goal. Please try again.');
+            }
+        }
+        
+        // Function to delete goal
+        function deleteGoal(goalId) {
+            // Remove goal from array
+            goals = goals.filter(goal => goal.id !== goalId);
+            
+            // Save to localStorage
+            try {
+                localStorage.setItem('smartGoals', JSON.stringify(goals));
+                updateGoalsDisplay();
+            } catch (e) {
+                console.error('Error deleting goal:', e);
+                alert('Failed to delete goal. Please try again.');
+            }
+        }
+        
+        // Function to load goals
+        function loadGoals() {
+            try {
+                const savedGoals = localStorage.getItem('smartGoals');
+                if (savedGoals) {
+                    goals = JSON.parse(savedGoals);
+                    updateGoalsDisplay();
+                }
+            } catch (e) {
+                console.error('Error loading goals:', e);
+            }
+        }
+        
+        // Function to update goals display
+        function updateGoalsDisplay() {
+            // Show/hide no goals message
+            if (goals.length === 0) {
+                noGoalsMsg.classList.remove('d-none');
+                goalsList.querySelectorAll('.goal-card').forEach(card => card.remove());
+                return;
+            } else {
+                noGoalsMsg.classList.add('d-none');
+            }
+            
+            // Sort goals by priority and due date
+            goals.sort((a, b) => {
+                const priorityOrder = { 'High': 1, 'Medium': 2, 'Low': 3 };
+                if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
+                    return priorityOrder[a.priority] - priorityOrder[b.priority];
+                }
+                return new Date(a.dueDate) - new Date(b.dueDate);
+            });
+            
+            // Remove existing goal cards
+            goalsList.querySelectorAll('.goal-card').forEach(card => card.remove());
+            
+            // Add each goal
+            goals.forEach(goal => {
+                const goalCard = createGoalCard(goal);
+                goalsList.appendChild(goalCard);
+            });
+            
+            // Set up edit buttons
+            document.querySelectorAll('.edit-goal-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const goalId = this.getAttribute('data-goal-id');
+                    editGoal(goalId);
+                });
+            });
+            
+            // Set up update progress buttons
+            document.querySelectorAll('.update-progress-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const goalId = this.getAttribute('data-goal-id');
+                    updateGoalProgress(goalId);
+                });
+            });
+        }
+        
+        // Function to create goal card
+        function createGoalCard(goal) {
+            // Calculate progress percentage
+            const progressPct = Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100));
+            
+            // Determine if goal is overdue
+            const isOverdue = new Date(goal.dueDate) < new Date() && progressPct < 100;
+            
+            // Create card element
+            const card = document.createElement('div');
+            card.className = `card shadow-sm goal-card priority-${goal.priority}`;
+            card.id = `goal-${goal.id}`;
+            
+            // Format date
+            const dueDate = new Date(goal.dueDate).toLocaleDateString();
+            
+            // Create card content
+            card.innerHTML = `
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <span class="badge ${getPriorityBadgeClass(goal.priority)} goal-badge me-2">${goal.priority}</span>
+                            <span class="badge bg-secondary goal-badge">${goal.category}</span>
+                        </div>
+                        <div class="goal-date ${isOverdue ? 'goal-overdue' : ''}">
+                            ${isOverdue ? '<i class="fas fa-exclamation-circle me-1"></i>' : ''}
+                            Due: ${dueDate}
+                        </div>
+                    </div>
+                    
+                    <h5 class="goal-title">${goal.title}</h5>
+                    
+                    <div class="goal-progress-container">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <div>Progress: ${formatCurrency(goal.currentAmount)} of ${formatCurrency(goal.targetAmount)}</div>
+                            <div><strong>${progressPct}%</strong></div>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar goal-progress-bar ${getProgressBarClass(progressPct)}" 
+                                 role="progressbar" 
+                                 style="width: ${progressPct}%" 
+                                 aria-valuenow="${progressPct}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="goal-details mt-3">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-3">Specific</dt>
+                            <dd class="col-sm-9">${goal.specific}</dd>
+                            
+                            <dt class="col-sm-3">Achievable</dt>
+                            <dd class="col-sm-9">${goal.achievable}</dd>
+                        </dl>
+                    </div>
+                    
+                    <div class="goal-actions d-flex justify-content-end">
+                        <button class="btn btn-outline-primary btn-sm update-progress-btn me-2" data-goal-id="${goal.id}">
+                            <i class="fas fa-chart-line me-1"></i>Update Progress
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm edit-goal-btn" data-goal-id="${goal.id}">
+                            <i class="fas fa-edit me-1"></i>Edit
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        // Function to edit goal
+        function editGoal(goalId) {
+            const goal = getExistingGoal(goalId);
+            if (!goal) return;
+            
+            // Set modal title
+            document.getElementById('goalModalLabel').textContent = 'Edit SMART Financial Goal';
+            
+            // Fill form with goal data
+            document.getElementById('goalId').value = goal.id;
+            document.getElementById('goalTitle').value = goal.title;
+            document.getElementById('goalCategory').value = goal.category;
+            document.getElementById('goalPriority').value = goal.priority;
+            document.getElementById('goalSpecific').value = goal.specific;
+            document.getElementById('goalMeasurableAmount').value = goal.targetAmount;
+            document.getElementById('goalMeasurableCurrent').value = goal.currentAmount;
+            document.getElementById('goalAchievable').value = goal.achievable;
+            document.getElementById('goalRelevant').value = goal.relevant;
+            document.getElementById('goalTimebound').value = goal.dueDate;
+            document.getElementById('goalRelatedMetric').value = goal.relatedMetric || '';
+            
+            // Show delete button
+            deleteGoalBtn.classList.remove('d-none');
+            
+            // Show modal
+            const goalModal = new bootstrap.Modal(document.getElementById('goalModal'));
+            goalModal.show();
+        }
+        
+        // Function to update goal progress
+        function updateGoalProgress(goalId) {
+            const goal = getExistingGoal(goalId);
+            if (!goal) return;
+            
+            const newProgress = prompt(`Update progress for "${goal.title}"\nCurrent progress: ${formatCurrency(goal.currentAmount)}\nTarget: ${formatCurrency(goal.targetAmount)}`, goal.currentAmount);
+            
+            if (newProgress === null) return; // User cancelled
+            
+            const progress = parseFloat(newProgress);
+            
+            if (isNaN(progress)) {
+                alert('Please enter a valid number.');
+                return;
+            }
+            
+            if (progress > goal.targetAmount) {
+                alert(`Progress cannot exceed the target amount of ${formatCurrency(goal.targetAmount)}.`);
+                return;
+            }
+            
+            if (progress < 0) {
+                alert('Progress cannot be negative.');
+                return;
+            }
+            
+            // Update goal
+            goal.currentAmount = progress;
+            goal.lastUpdated = new Date().toISOString();
+            
+            // Save to localStorage
+            try {
+                localStorage.setItem('smartGoals', JSON.stringify(goals));
+                updateGoalsDisplay();
+            } catch (e) {
+                console.error('Error updating goal progress:', e);
+                alert('Failed to update goal progress. Please try again.');
+            }
+        }
+        
+        // Helper function to get existing goal
+        function getExistingGoal(goalId) {
+            return goals.find(goal => goal.id === goalId);
+        }
+        
+        // Helper function to generate ID
+        function generateId() {
+            return 'goal_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+        
+        // Helper function to format currency
+        function formatCurrency(amount) {
+            return '$' + amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        
+        // Helper function to get priority badge class
+        function getPriorityBadgeClass(priority) {
+            switch (priority) {
+                case 'High': return 'bg-danger';
+                case 'Medium': return 'bg-warning text-dark';
+                case 'Low': return 'bg-secondary';
+                default: return 'bg-secondary';
+            }
+        }
+        
+        // Helper function to get progress bar class
+        function getProgressBarClass(progressPct) {
+            if (progressPct >= 100) return 'bg-success';
+            if (progressPct >= 75) return 'bg-info';
+            if (progressPct >= 50) return 'bg-primary';
+            if (progressPct >= 25) return 'bg-warning';
+            return 'bg-danger';
+        }
+    }
+});
+</script>

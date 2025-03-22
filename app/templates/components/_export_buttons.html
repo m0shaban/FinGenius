@@ -1,0 +1,31 @@
+<div class="dropdown">
+    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="exportDropdown{% if id is defined %}{{ id }}{% endif %}" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="fas fa-download me-1"></i> Export
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="exportDropdown{% if id is defined %}{{ id }}{% endif %}">
+        {% set export_section = section|default('dashboard') %}
+        <li>
+            <a class="dropdown-item export-pdf" href="{{ url_for('export.export_' + export_section, format='pdf', **kwargs|default({})) }}" target="_blank">
+                <i class="fas fa-file-pdf text-danger me-2"></i> PDF Report
+            </a>
+        </li>
+        <li>
+            <a class="dropdown-item export-excel" href="{{ url_for('export.export_' + export_section, format='excel', **kwargs|default({})) }}">
+                <i class="fas fa-file-excel text-success me-2"></i> Excel Spreadsheet
+            </a>
+        </li>
+        <li>
+            <a class="dropdown-item export-csv" href="{{ url_for('export.export_' + export_section, format='csv', **kwargs|default({})) }}">
+                <i class="fas fa-file-csv text-primary me-2"></i> CSV File
+            </a>
+        </li>
+        {% if include_png is defined and include_png %}
+        <li><hr class="dropdown-divider"></li>
+        <li>
+            <a class="dropdown-item export-png" href="#" data-chart-id="{{ chart_id|default('chart') }}">
+                <i class="fas fa-image text-info me-2"></i> Image (PNG)
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</div>

@@ -1,0 +1,985 @@
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Chart instances
+    let combinedProjectionChart = null;
+    let revenueProjectionChart = null;
+    let costProjectionChart = null;
+    let profitProjectionChart = null;
+    
+    // Store historical and projection data
+    let historicalData = null;
+    let projectionData = null;
+    
+    // Initialize UI elements
+    initUI();
+    
+    // Set up event listeners
+    setupEventListeners();
+    
+    // Initialize UI elements
+    function initUI() {
+        // Initialize sliders
+        document.getElementById('revenueGrowth').addEventListener('input', function() {
+            document.getElementById('revenueGrowthValue').textContent = this.value + '%';
+        });
+        
+        document.getElementById('costGrowth').addEventListener('input', function() {
+            document.getElementById('costGrowthValue').textContent = this.value + '%';
+        });
+        
+        // Toggle data source
+        const dataSourceFile = document.getElementById('dataSourceFile');
+        const dataSourceManual = document.getElementById('dataSourceManual');
+        const fileSelector = document.getElementById('fileSelector');
+        const manualDataEntry = document.getElementById('manualDataEntry');
+        
+        dataSourceFile.addEventListener('change', function() {
+            if (this.checked) {
+                fileSelector.classList.remove('d-none');
+                manualDataEntry.classList.add('d-none');
+            }
+        });
+        
+        dataSourceManual.addEventListener('change', function() {
+            if (this.checked) {
+                fileSelector.classList.add('d-none');
+                manualDataEntry.classList.remove('d-none');
+            }
+        });
+        
+        // Initialize manual data profit calculation
+        const revenueInputs = document.querySelectorAll('.manual-revenue');
+        const costInputs = document.querySelectorAll('.manual-costs');
+        const profitCells = document.querySelectorAll('.manual-profit');
+        
+        function updateManualProfit() {
+            revenueInputs.forEach((input, index) => {
+                const revenue = parseFloat(input.value) || 0;
+                const cost = parseFloat(costInputs[index].value) || 0;
+                const profit = revenue - cost;
+                profitCells[index].textContent = formatCurrency(profit);
+            });
+        }
+        
+        revenueInputs.forEach(input => {
+            input.addEventListener('input', updateManualProfit);
+        });
+        
+        costInputs.forEach(input => {
+            input.addEventListener('input', updateManualProfit);
+        });
+        
+        // Initialize view toggle
+        document.getElementById('viewCombined').addEventListener('click', function() {
+            this.classList.add('active');
+            document.getElementById('viewSeparate').classList.remove('active');
+            document.getElementById('combinedChartView').classList.remove('d-none');
+            document.getElementById('separateChartView').classList.add('d-none');
+        });
+        
+        document.getElementById('viewSeparate').addEventListener('click', function() {
+            this.classList.add('active');
+            document.getElementById('viewCombined').classList.remove('active');
+            document.getElementById('combinedChartView').classList.add('d-none');
+            document.getElementById('separateChartView').classList.remove('d-none');
+        });
+    }
+    
+    // Set up event listeners
+    function setupEventListeners() {
+        // Generate projections button
+        document.getElementById('generateProjections').addEventListener('click', generateProjections);
+        
+        // Export button
+        document.getElementById('exportProjections').addEventListener('click', exportProjectionsToCSV);
+        
+        // Auto-calculate toggle
+        document.getElementById('useHistoricalGrowth').addEventListener('change', function() {
+            const revenueGrowthSlider = document.getElementById('revenueGrowth');
+            const costGrowthSlider = document.getElementById('costGrowth');
+            
+            revenueGrowthSlider.disabled = this.checked;
+            costGrowthSlider.disabled = this.checked;
+        });
+    }
+    
+    // Generate financial projections
+    function generateProjections() {
+        // Show loading state
+        document.getElementById('projection-loading').classList.remove('d-none');
+        document.getElementById('projection-empty').classList.add('d-none');
+        document.getElementById('projection-results').classList.add('d-none');
+        document.getElementById('metrics-empty').classList.add('d-none');
+        document.getElementById('metrics-results').classList.add('d-none');
+        document.getElementById('table-empty').classList.add('d-none');
+        document.getElementById('table-results').classList.add('d-none');
+        
+        // Get selected data source
+        const dataSource = document.querySelector('input[name="dataSource"]:checked').value;
+        
+        // Get historical data based on selected source
+        if (dataSource === 'file') {
+            // Get selected file ID
+            const fileId = document.getElementById('fileSelect').value;
+            
+            if (!fileId) {
+                alert('Please select a file to continue.');
+                hideLoading();
+                return;
+            }
+            
+            // Fetch file data from API
+            fetch(`/api/file/${fileId}/data`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch file data');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    processFileData(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching file data:', error);
+                    alert('Failed to fetch file data. Using sample data instead.');
+                    useSampleData();
+                });
+        } else {
+            // Get manual data
+            const manualData = getManualDataFromForm();
+            if (manualData) {
+                processManualData(manualData);
+            } else {
+                alert('Please fill in at least 4 quarters of historical data.');
+                hideLoading();
+                return;
+            }
+        }
+    }
+    
+    // Process file data
+    function processFileData(data) {
+        // Try to identify revenue and cost columns
+        let revenueColumn = null;
+        let costColumn = null;
+        let dateColumn = null;
+        
+        // Find columns
+        for (const column of data.columns) {
+            const lowerColumn = column.toLowerCase();
+            if (lowerColumn.includes('revenue') || lowerColumn.includes('income') || lowerColumn.includes('sales')) {
+                revenueColumn = column;
+            } else if (lowerColumn.includes('cost') || lowerColumn.includes('expense')) {
+                costColumn = column;
+            } else if (lowerColumn.includes('date') || lowerColumn.includes('time') || lowerColumn.includes('period')) {
+                dateColumn = column;
+            }
+        }
+        
+        // If we don't have needed columns, use sample data
+        if (!revenueColumn || !costColumn) {
+            console.warn('Could not identify revenue and cost columns. Using sample data.');
+            useSampleData();
+            return;
+        }
+        
+        // Extract data
+        const records = data.records;
+        
+        // Sort by date if date column exists
+        if (dateColumn) {
+            records.sort((a, b) => {
+                const dateA = new Date(a[dateColumn]);
+                const dateB = new Date(b[dateColumn]);
+                return dateA - dateB;
+            });
+        }
+        
+        // Convert to numbers
+        const historical = records.map(record => {
+            const revenue = parseFloat(record[revenueColumn]) || 0;
+            const cost = parseFloat(record[costColumn]) || 0;
+            return {
+                date: dateColumn ? record[dateColumn] : '',
+                revenue,
+                cost,
+                profit: revenue - cost
+            };
+        });
+        
+        // Use the most recent data points
+        const recentData = historical.slice(-8); // Use last 8 data points
+        
+        // Process the historical data and generate projections
+        processHistoricalData(recentData);
+    }
+    
+    // Get manual data from form
+    function getManualDataFromForm() {
+        const revenueInputs = document.querySelectorAll('.manual-revenue');
+        const costInputs = document.querySelectorAll('.manual-costs');
+        
+        // Check if we have enough data (at least 4 valid entries)
+        let validCount = 0;
+        for (let i = 0; i < revenueInputs.length; i++) {
+            if (revenueInputs[i].value && costInputs[i].value) {
+                validCount++;
+            }
+        }
+        
+        if (validCount < 4) {
+            return null;
+        }
+        
+        // Periods array
+        const periods = [
+            'Previous Year Q1',
+            'Previous Year Q2',
+            'Previous Year Q3',
+            'Previous Year Q4',
+            'Current Year Q1',
+            'Current Year Q2'
+        ];
+        
+        // Create historical data array
+        const historical = [];
+        
+        for (let i = 0; i < revenueInputs.length; i++) {
+            const revenue = parseFloat(revenueInputs[i].value) || 0;
+            const cost = parseFloat(costInputs[i].value) || 0;
+            
+            if (revenue && cost) {
+                historical.push({
+                    date: periods[i],
+                    revenue,
+                    cost,
+                    profit: revenue - cost
+                });
+            }
+        }
+        
+        return historical;
+    }
+    
+    // Process manual data
+    function processManualData(manualData) {
+        processHistoricalData(manualData);
+    }
+    
+    // Use sample data when API fails
+    function useSampleData() {
+        const sampleData = [
+            { date: 'Q1 2023', revenue: 450000, cost: 320000, profit: 130000 },
+            { date: 'Q2 2023', revenue: 490000, cost: 340000, profit: 150000 },
+            { date: 'Q3 2023', revenue: 520000, cost: 360000, profit: 160000 },
+            { date: 'Q4 2023', revenue: 580000, cost: 390000, profit: 190000 },
+            { date: 'Q1 2024', revenue: 610000, cost: 410000, profit: 200000 },
+            { date: 'Q2 2024', revenue: 650000, cost: 430000, profit: 220000 }
+        ];
+        
+        processHistoricalData(sampleData);
+    }
+    
+    // Process historical data and generate projections
+    function processHistoricalData(data) {
+        // Store historical data
+        historicalData = data;
+        
+        // Calculate growth rates from historical data
+        let revenueGrowthRate, costGrowthRate;
+        
+        if (document.getElementById('useHistoricalGrowth').checked) {
+            // Calculate growth rates from historical data
+            const growthRates = calculateHistoricalGrowthRates(data);
+            revenueGrowthRate = growthRates.revenueGrowthRate;
+            costGrowthRate = growthRates.costGrowthRate;
+            
+            // Update sliders to reflect calculated rates
+            document.getElementById('revenueGrowth').value = revenueGrowthRate;
+            document.getElementById('revenueGrowthValue').textContent = revenueGrowthRate.toFixed(1) + '%';
+            
+            document.getElementById('costGrowth').value = costGrowthRate;
+            document.getElementById('costGrowthValue').textContent = costGrowthRate.toFixed(1) + '%';
+        } else {
+            // Use user-specified growth rates
+            revenueGrowthRate = parseFloat(document.getElementById('revenueGrowth').value);
+            costGrowthRate = parseFloat(document.getElementById('costGrowth').value);
+        }
+        
+        // Get projection parameters
+        const projectionPeriod = parseInt(document.getElementById('projectionPeriod').value);
+        const projectionInterval = document.getElementById('projectionInterval').value;
+        const considerSeasonality = document.getElementById('seasonalityToggle').checked;
+        
+        // Generate projections
+        projectionData = generateFinancialProjections(
+            data,
+            revenueGrowthRate,
+            costGrowthRate,
+            projectionPeriod,
+            projectionInterval,
+            considerSeasonality
+        );
+        
+        // Update UI with projections
+        updateProjectionCharts();
+        updateMetrics();
+        updateProjectionTable();
+        
+        // Hide loading state and show results
+        hideLoading();
+    }
+    
+    // Calculate historical growth rates
+    function calculateHistoricalGrowthRates(data) {
+        // Need at least 2 data points
+        if (data.length < 2) {
+            return {
+                revenueGrowthRate: 5,
+                costGrowthRate: 3
+            };
+        }
+        
+        // Calculate year-over-year growth if we have enough data (4+ periods)
+        if (data.length >= 4) {
+            const firstHalfRevenue = data.slice(0, Math.floor(data.length / 2)).reduce((sum, item) => sum + item.revenue, 0);
+            const secondHalfRevenue = data.slice(Math.floor(data.length / 2)).reduce((sum, item) => sum + item.revenue, 0);
+            
+            const firstHalfCost = data.slice(0, Math.floor(data.length / 2)).reduce((sum, item) => sum + item.cost, 0);
+            const secondHalfCost = data.slice(Math.floor(data.length / 2)).reduce((sum, item) => sum + item.cost, 0);
+            
+            // Calculate annualized growth rates
+            const periodsInYear = 4; // Assuming quarterly data
+            const halfDataPoints = Math.floor(data.length / 2);
+            const annualizationFactor = periodsInYear / halfDataPoints;
+            
+            const revenueGrowthRate = ((secondHalfRevenue / firstHalfRevenue) - 1) * 100 * annualizationFactor;
+            const costGrowthRate = ((secondHalfCost / firstHalfCost) - 1) * 100 * annualizationFactor;
+            
+            return {
+                revenueGrowthRate: Math.min(Math.max(revenueGrowthRate, -20), 50), // Clamp between -20% and 50%
+                costGrowthRate: Math.min(Math.max(costGrowthRate, -15), 40) // Clamp between -15% and 40%
+            };
+        }
+        
+        // Simple growth calculation if we don't have enough data
+        const revenueGrowthRate = ((data[data.length - 1].revenue / data[0].revenue) - 1) * 100;
+        const costGrowthRate = ((data[data.length - 1].cost / data[0].cost) - 1) * 100;
+        
+        return {
+            revenueGrowthRate: Math.min(Math.max(revenueGrowthRate, -20), 50), // Clamp between -20% and 50%
+            costGrowthRate: Math.min(Math.max(costGrowthRate, -15), 40) // Clamp between -15% and 40%
+        };
+    }
+    
+    // Generate financial projections
+    function generateFinancialProjections(
+        historicalData,
+        revenueGrowthRate,
+        costGrowthRate,
+        projectionPeriod,
+        interval,
+        considerSeasonality
+    ) {
+        // Start with the most recent historical data point
+        const lastDataPoint = historicalData[historicalData.length - 1];
+        let currentRevenue = lastDataPoint.revenue;
+        let currentCost = lastDataPoint.cost;
+        
+        // Calculate quarterly growth rates
+        let intervalFactor;
+        if (interval === 'month') {
+            intervalFactor = 1/12;
+        } else if (interval === 'quarter') {
+            intervalFactor = 1/4;
+        } else { // yearly
+            intervalFactor = 1;
+        }
+        
+        const periodicRevenueGrowth = Math.pow(1 + revenueGrowthRate / 100, intervalFactor) - 1;
+        const periodicCostGrowth = Math.pow(1 + costGrowthRate / 100, intervalFactor) - 1;
+        
+        // Extract seasonality factors if enabled
+        let seasonalityFactors = null;
+        if (considerSeasonality && historicalData.length >= 4) {
+            seasonalityFactors = extractSeasonalityFactors(historicalData);
+        }
+        
+        // Generate projection periods
+        const projections = [];
+        
+        // Calculate how many periods to generate
+        let periodsToGenerate;
+        if (interval === 'month') {
+            periodsToGenerate = projectionPeriod;
+        } else if (interval === 'quarter') {
+            periodsToGenerate = Math.ceil(projectionPeriod / 3);
+        } else { // yearly
+            periodsToGenerate = Math.ceil(projectionPeriod / 12);
+        }
+        
+        // Label prefix based on interval
+        let labelPrefix;
+        if (interval === 'month') {
+            labelPrefix = 'Month';
+        } else if (interval === 'quarter') {
+            labelPrefix = 'Q';
+        } else { // yearly
+            labelPrefix = 'Year';
+        }
+        
+        for (let i = 0; i < periodsToGenerate; i++) {
+            // Apply growth
+            currentRevenue *= (1 + periodicRevenueGrowth);
+            currentCost *= (1 + periodicCostGrowth);
+            
+            // Apply seasonality if enabled
+            if (seasonalityFactors) {
+                const seasonalIndex = i % seasonalityFactors.length;
+                currentRevenue *= seasonalityFactors[seasonalIndex].revenue;
+                currentCost *= seasonalityFactors[seasonalIndex].cost;
+            }
+            
+            // Calculate profit
+            const profit = currentRevenue - currentCost;
+            
+            // Add to projections
+            projections.push({
+                period: `${labelPrefix} ${i + 1}`,
+                revenue: currentRevenue,
+                cost: currentCost,
+                profit: profit,
+                profitMargin: profit / currentRevenue
+            });
+        }
+        
+        return projections;
+    }
+    
+    // Extract seasonality factors from historical data
+    function extractSeasonalityFactors(data) {
+        // We need at least 4 data points for seasonality
+        if (data.length < 4) return null;
+        
+        // Identify any patterns in the historical data
+        const factors = [];
+        const intervalCount = Math.min(4, data.length); // Use up to 4 periods for seasonality
+        
+        // Calculate average revenue and cost
+        const avgRevenue = data.reduce((sum, item) => sum + item.revenue, 0) / data.length;
+        const avgCost = data.reduce((sum, item) => sum + item.cost, 0) / data.length;
+        
+        // Extract the factors from the most recent interval periods
+        for (let i = data.length - intervalCount; i < data.length; i++) {
+            factors.push({
+                revenue: data[i].revenue / avgRevenue,
+                cost: data[i].cost / avgCost
+            });
+        }
+        
+        // Normalize the factors so their average is 1
+        const avgFactor = {
+            revenue: factors.reduce((sum, factor) => sum + factor.revenue, 0) / factors.length,
+            cost: factors.reduce((sum, factor) => sum + factor.cost, 0) / factors.length
+        };
+        
+        return factors.map(factor => ({
+            revenue: factor.revenue / avgFactor.revenue,
+            cost: factor.cost / avgFactor.cost
+        }));
+    }
+    
+    // Update projection charts
+    function updateProjectionCharts() {
+        // Prepare data for charts
+        const labels = projectionData.map(item => item.period);
+        const revenueData = projectionData.map(item => item.revenue);
+        const costData = projectionData.map(item => item.cost);
+        const profitData = projectionData.map(item => item.profit);
+        
+        // Historical data for the charts (last few points)
+        const historicalLabels = historicalData.slice(-4).map((item, index) => 
+            `Historical ${index + 1}`);
+        const historicalRevenueData = historicalData.slice(-4).map(item => item.revenue);
+        const historicalCostData = historicalData.slice(-4).map(item => item.cost);
+        const historicalProfitData = historicalData.slice(-4).map(item => item.profit);
+        
+        // Combine historical and projection data
+        const combinedLabels = [...historicalLabels, ...labels];
+        const combinedRevenueData = [...historicalRevenueData, ...revenueData];
+        const combinedCostData = [...historicalCostData, ...costData];
+        const combinedProfitData = [...historicalProfitData, ...profitData];
+        
+        // Create a dashed line at the boundary between historical and projected data
+        const historicalLength = historicalLabels.length;
+        
+        // Update or create combined chart
+        if (combinedProjectionChart) {
+            combinedProjectionChart.data.labels = combinedLabels;
+            combinedProjectionChart.data.datasets[0].data = combinedRevenueData;
+            combinedProjectionChart.data.datasets[1].data = combinedCostData;
+            combinedProjectionChart.data.datasets[2].data = combinedProfitData;
+            combinedProjectionChart.options.plugins.annotation.annotations.line1.xMin = historicalLength - 0.5;
+            combinedProjectionChart.options.plugins.annotation.annotations.line1.xMax = historicalLength - 0.5;
+            combinedProjectionChart.update();
+        } else {
+            const ctx = document.getElementById('combinedProjectionChart').getContext('2d');
+            combinedProjectionChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: combinedLabels,
+                    datasets: [
+                        {
+                            label: 'Revenue',
+                            data: combinedRevenueData,
+                            borderColor: '#4285F4',
+                            backgroundColor: 'rgba(66, 133, 244, 0.1)',
+                            fill: false,
+                            tension: 0.1,
+                            borderWidth: 2,
+                            pointRadius: 3
+                        },
+                        {
+                            label: 'Costs',
+                            data: combinedCostData,
+                            borderColor: '#DB4437',
+                            backgroundColor: 'rgba(219, 68, 55, 0.1)',
+                            fill: false,
+                            tension: 0.1,
+                            borderWidth: 2,
+                            pointRadius: 3
+                        },
+                        {
+                            label: 'Profit',
+                            data: combinedProfitData,
+                            borderColor: '#0F9D58',
+                            backgroundColor: 'rgba(15, 157, 88, 0.1)',
+                            fill: false,
+                            tension: 0.1,
+                            borderWidth: 2,
+                            pointRadius: 3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += '$' + context.parsed.y.toLocaleString(undefined, {
+                                            minimumFractionDigits: 0,
+                                            maximumFractionDigits: 0
+                                        });
+                                    }
+                                    return label;
+                                }
+                            }
+                        },
+                        legend: {
+                            position: 'top',
+                        },
+                        annotation: {
+                            annotations: {
+                                line1: {
+                                    type: 'line',
+                                    xMin: historicalLength - 0.5,
+                                    xMax: historicalLength - 0.5,
+                                    borderColor: 'rgba(0, 0, 0, 0.3)',
+                                    borderWidth: 2,
+                                    borderDash: [6, 6],
+                                    label: {
+                                        content: 'Projection Start',
+                                        display: true,
+                                        position: 'start',
+                                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                                        rotation: 90
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString(undefined, {
+                                        minimumFractionDigits: 0,
+                                        maximumFractionDigits: 0
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update or create revenue chart
+        if (revenueProjectionChart) {
+            revenueProjectionChart.data.labels = combinedLabels;
+            revenueProjectionChart.data.datasets[0].data = combinedRevenueData;
+            revenueProjectionChart.options.plugins.annotation.annotations.line1.xMin = historicalLength - 0.5;
+            revenueProjectionChart.options.plugins.annotation.annotations.line1.xMax = historicalLength - 0.5;
+            revenueProjectionChart.update();
+        } else {
+            const ctx = document.getElementById('revenueProjectionChart').getContext('2d');
+            revenueProjectionChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: combinedLabels,
+                    datasets: [{
+                        label: 'Revenue',
+                        data: combinedRevenueData,
+                        borderColor: '#4285F4',
+                        backgroundColor: 'rgba(66, 133, 244, 0.1)',
+                        fill: true,
+                        tension: 0.1,
+                        borderWidth: 2,
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Revenue: $' + context.parsed.y.toLocaleString(undefined, {
+                                        minimumFractionDigits: 0,
+                                        maximumFractionDigits: 0
+                                    });
+                                }
+                            }
+                        },
+                        legend: {
+                            display: false
+                        },
+                        annotation: {
+                            annotations: {
+                                line1: {
+                                    type: 'line',
+                                    xMin: historicalLength - 0.5,
+                                    xMax: historicalLength - 0.5,
+                                    borderColor: 'rgba(0, 0, 0, 0.3)',
+                                    borderWidth: 2,
+                                    borderDash: [6, 6],
+                                    label: {
+                                        content: 'Projection Start',
+                                        display: true,
+                                        position: 'start',
+                                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                                        rotation: 90
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString(undefined, {
+                                        minimumFractionDigits: 0,
+                                        maximumFractionDigits: 0
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update or create cost chart
+        if (costProjectionChart) {
+            costProjectionChart.data.labels = combinedLabels;
+            costProjectionChart.data.datasets[0].data = combinedCostData;
+            costProjectionChart.options.plugins.annotation.annotations.line1.xMin = historicalLength - 0.5;
+            costProjectionChart.options.plugins.annotation.annotations.line1.xMax = historicalLength - 0.5;
+            costProjectionChart.update();
+        } else {
+            const ctx = document.getElementById('costProjectionChart').getContext('2d');
+            costProjectionChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: combinedLabels,
+                    datasets: [{
+                        label: 'Costs',
+                        data: combinedCostData,
+                        borderColor: '#DB4437',
+                        backgroundColor: 'rgba(219, 68, 55, 0.1)',
+                        fill: true,
+                        tension: 0.1,
+                        borderWidth: 2,
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Costs: $' + context.parsed.y.toLocaleString(undefined, {
+                                        minimumFractionDigits: 0,
+                                        maximumFractionDigits: 0
+                                    });
+                                }
+                            }
+                        },
+                        legend: {
+                            display: false
+                        },
+                        annotation: {
+                            annotations: {
+                                line1: {
+                                    type: 'line',
+                                    xMin: historicalLength - 0.5,
+                                    xMax: historicalLength - 0.5,
+                                    borderColor: 'rgba(0, 0, 0, 0.3)',
+                                    borderWidth: 2,
+                                    borderDash: [6, 6],
+                                    label: {
+                                        content: 'Projection Start',
+                                        display: true,
+                                        position: 'start',
+                                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                                        rotation: 90
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString(undefined, {
+                                        minimumFractionDigits: 0,
+                                        maximumFractionDigits: 0
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update or create profit chart
+        if (profitProjectionChart) {
+            profitProjectionChart.data.labels = combinedLabels;
+            profitProjectionChart.data.datasets[0].data = combinedProfitData;
+            profitProjectionChart.options.plugins.annotation.annotations.line1.xMin = historicalLength - 0.5;
+            profitProjectionChart.options.plugins.annotation.annotations.line1.xMax = historicalLength - 0.5;
+            profitProjectionChart.update();
+        } else {
+            const ctx = document.getElementById('profitProjectionChart').getContext('2d');
+            profitProjectionChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: combinedLabels,
+                    datasets: [{
+                        label: 'Profit',
+                        data: combinedProfitData,
+                        borderColor: '#0F9D58',
+                        backgroundColor: 'rgba(15, 157, 88, 0.1)',
+                        fill: true,
+                        tension: 0.1,
+                        borderWidth: 2,
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Profit: $' + context.parsed.y.toLocaleString(undefined, {
+                                        minimumFractionDigits: 0,
+                                        maximumFractionDigits: 0
+                                    });
+                                }
+                            }
+                        },
+                        legend: {
+                            display: false
+                        },
+                        annotation: {
+                            annotations: {
+                                line1: {
+                                    type: 'line',
+                                    xMin: historicalLength - 0.5,
+                                    xMax: historicalLength - 0.5,
+                                    borderColor: 'rgba(0, 0, 0, 0.3)',
+                                    borderWidth: 2,
+                                    borderDash: [6, 6],
+                                    label: {
+                                        content: 'Projection Start',
+                                        display: true,
+                                        position: 'start',
+                                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                                        rotation: 90
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString(undefined, {
+                                        minimumFractionDigits: 0,
+                                        maximumFractionDigits: 0
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+    
+    // Update metrics display
+    function updateMetrics() {
+        // Get growth rates
+        const revenueGrowthRate = parseFloat(document.getElementById('revenueGrowth').value);
+        const costGrowthRate = parseFloat(document.getElementById('costGrowth').value);
+        
+        // Get first and last data point in projections
+        const firstProj = projectionData[0];
+        const lastProj = projectionData[projectionData.length - 1];
+        
+        // Calculate overall growth
+        const firstHistorical = historicalData[0];
+        const lastHistorical = historicalData[historicalData.length - 1];
+        
+        const startRevenue = lastHistorical.revenue;
+        const endRevenue = lastProj.revenue;
+        const revenueOverallGrowth = ((endRevenue / startRevenue) - 1) * 100;
+        
+        const startCost = lastHistorical.cost;
+        const endCost = lastProj.cost;
+        const costOverallGrowth = ((endCost / startCost) - 1) * 100;
+        
+        const startProfit = lastHistorical.profit;
+        const endProfit = lastProj.profit;
+        const profitOverallGrowth = ((endProfit / startProfit) - 1) * 100;
+        
+        // Calculate average profit margin
+        const avgProfitMargin = projectionData.reduce((sum, item) => sum + item.profitMargin, 0) / projectionData.length * 100;
+        
+        // Update metric displays
+        document.getElementById('revenueAnnualGrowth').textContent = formatPercentage(revenueGrowthRate);
+        document.getElementById('revenueEndValue').textContent = formatCurrency(endRevenue);
+        document.getElementById('revenueOverallGrowth').textContent = formatPercentage(revenueOverallGrowth);
+        
+        document.getElementById('costAnnualGrowth').textContent = formatPercentage(costGrowthRate);
+        document.getElementById('costEndValue').textContent = formatCurrency(endCost);
+        document.getElementById('costOverallGrowth').textContent = formatPercentage(costOverallGrowth);
+        
+        document.getElementById('profitAnnualGrowth').textContent = formatPercentage(profitOverallGrowth / projectionData.length * 4); // Annualized
+        document.getElementById('profitEndValue').textContent = formatCurrency(endProfit);
+        document.getElementById('avgProfitMargin').textContent = formatPercentage(avgProfitMargin);
+    }
+    
+    // Update projection table
+    function updateProjectionTable() {
+        const tableBody = document.getElementById('projectionTableBody');
+        tableBody.innerHTML = '';
+        
+        // Add rows for projection data
+        projectionData.forEach(item => {
+            const row = document.createElement('tr');
+            
+            row.innerHTML = `
+                <td>${item.period}</td>
+                <td class="text-end">${formatCurrency(item.revenue)}</td>
+                <td class="text-end">${formatCurrency(item.cost)}</td>
+                <td class="text-end">${formatCurrency(item.profit)}</td>
+                <td class="text-end">${formatPercentage(item.profitMargin * 100)}</td>
+            `;
+            
+            tableBody.appendChild(row);
+        });
+    }
+    
+    // Export projections to CSV
+    function exportProjectionsToCSV() {
+        if (!projectionData) {
+            alert('Please generate projections first.');
+            return;
+        }
+        
+        // Create CSV content
+        let csvContent = 'Period,Revenue,Costs,Profit,Profit Margin\n';
+        
+        projectionData.forEach(item => {
+            csvContent += `${item.period},${item.revenue.toFixed(2)},${item.cost.toFixed(2)},${item.profit.toFixed(2)},${(item.profitMargin * 100).toFixed(2)}%\n`;
+        });
+        
+        // Create download link
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'financial_projections.csv');
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+    
+    // Format currency
+    function formatCurrency(value) {
+        return '$' + value.toLocaleString(undefined, {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        });
+    }
+    
+    // Format percentage
+    function formatPercentage(value) {
+        const sign = value >= 0 ? '+' : '';
+        return sign + value.toFixed(1) + '%';
+    }
+    
+    // Hide loading indicators and show results
+    function hideLoading() {
+        document.getElementById('projection-loading').classList.add('d-none');
+        document.getElementById('projection-empty').classList.add('d-none');
+        document.getElementById('projection-results').classList.remove('d-none');
+        document.getElementById('metrics-empty').classList.add('d-none');
+        document.getElementById('metrics-results').classList.remove('d-none');
+        document.getElementById('table-empty').classList.add('d-none');
+        document.getElementById('table-results').classList.remove('d-none');
+    }
+});
+</script>

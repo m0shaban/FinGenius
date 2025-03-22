@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Financial Data{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1>Upload Financial Data</h1>
+        <p>Upload your financial data files (CSV, Excel) for analysis.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h5>Upload File</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Select Financial Data File</label>
+                        <input type="file" class="form-control" id="file" name="file">
+                        <div class="form-text">Supported formats: CSV, XLSX, XLS</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <button type="submit" class="btn btn-primary">Upload File</button>
+                        <a href="{{ url_for('core.dashboard') }}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5>File Format Guidelines</h5>
+            </div>
+            <div class="card-body">
+                <h6>CSV Files</h6>
+                <p>Ensure your CSV file has headers in the first row and is properly formatted with consistent delimiters.</p>
+                
+                <h6>Excel Files</h6>
+                <p>Your Excel file should have clear headers in the first row. The first sheet will be processed by default.</p>
+                
+                <h6>Recommended Columns</h6>
+                <p>For best analysis results, include columns like:</p>
+                <ul>
+                    <li>Date/Period</li>
+                    <li>Revenue/Income</li>
+                    <li>Expenses</li>
+                    <li>Profit/Loss</li>
+                    <li>Assets</li>
+                    <li>Liabilities</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

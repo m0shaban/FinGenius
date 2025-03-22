@@ -1,0 +1,63 @@
+# Python bytecode files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment and local settings
+.env
+.venv
+env/
+venv/
+ENV/
+instance/
+.webassets-cache
+
+# Database files
+*.db
+*.sqlite3
+
+# Uploaded files
+uploads/
+
+# Log files
+*.log
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Dependencies
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build files
+/build
+/dist
+/.next
+/out
+
+# Cache
+.cache/
+.parcel-cache/

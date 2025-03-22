@@ -1,0 +1,718 @@
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<!-- Include Marked for Markdown rendering -->
+<script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
+
+<script>
+// Existing code...
+
+// Function to update dashboard metrics
+function updateDashboardMetrics() {
+    // Simulate loading data (replace with actual API call)
+    setTimeout(() => {
+        // Sample data - replace with actual data from your backend
+        const metrics = {
+            revenue: {
+                value: '$485,726',
+                change: '+12.3%',
+                trend: 'up' // 'up' or 'down'
+            },
+            profit: {
+                value: '$142,590',
+                change: '+8.7%',
+                trend: 'up'
+            },
+            roi: {
+                value: '18.2%',
+                change: '-2.1%',
+                trend: 'down'
+            },
+            growth: {
+                value: '15.4%',
+                change: '+3.2%',
+                trend: 'up'
+            }
+        };
+        
+        // Update metrics in the UI
+        updateMetric('revenue', metrics.revenue);
+        updateMetric('profit', metrics.profit);
+        updateMetric('roi', metrics.roi);
+        updateMetric('growth', metrics.growth);
+    }, 1000); // Simulate loading delay
+}
+
+// Helper function to update a single metric
+function updateMetric(id, data) {
+    // Update value
+    document.getElementById(`${id}-metric`).innerHTML = data.value;
+    
+    // Update change indicator
+    const changeEl = document.getElementById(`${id}-change`);
+    const icon = data.trend === 'up' 
+        ? '<i class="fas fa-caret-up text-success me-1"></i>' 
+        : '<i class="fas fa-caret-down text-danger me-1"></i>';
+    
+    changeEl.innerHTML = icon + data.change;
+}
+
+// Chart instances
+let revenueExpensesChart = null;
+let financialRatiosChart = null;
+
+// Current selected time range
+let currentTimeRange = 'month';
+
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    // Update metrics when page loads
+    updateDashboardMetrics();
+    
+    // Set up refresh button
+    const refreshBtn = document.getElementById('refreshDashboard');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            // Reset metrics to loading state
+            document.getElementById('revenue-metric').innerHTML = '<span class="placeholder-glow"><span class="placeholder col-4">Loading...</span></span>';
+            document.getElementById('profit-metric').innerHTML = '<span class="placeholder-glow"><span class="placeholder col-4">Loading...</span></span>';
+            document.getElementById('roi-metric').innerHTML = '<span class="placeholder-glow"><span class="placeholder col-4">Loading...</span></span>';
+            document.getElementById('growth-metric').innerHTML = '<span class="placeholder-glow"><span class="placeholder col-4">Loading...</span></span>';
+            
+            // Refresh metrics
+            updateDashboardMetrics();
+            
+            // Refresh charts
+            loadChartData(currentTimeRange);
+        });
+    }
+    
+    // Initialize charts
+    initCharts();
+    
+    // Set up time filter events
+    setupTimeFilters();
+    
+    // Load initial chart data
+    loadChartData('month');
+    
+    // Load AI Insights
+    loadAIInsights();
+    
+    // Setup refresh buttons for insights
+    const refreshInsightsBtn = document.getElementById('refreshInsights');
+    const retryInsightsBtn = document.getElementById('retryInsights');
+    
+    if (refreshInsightsBtn) {
+        refreshInsightsBtn.addEventListener('click', loadAIInsights);
+    }
+    
+    if (retryInsightsBtn) {
+        retryInsightsBtn.addEventListener('click', loadAIInsights);
+    }
+});
+
+// Initialize charts
+function initCharts() {
+    // Create Revenue vs Expenses Chart
+    const revenueExpensesCtx = document.getElementById('revenueExpensesChart').getContext('2d');
+    revenueExpensesChart = new Chart(revenueExpensesCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'Revenue',
+                    data: [],
+                    borderColor: '#4285F4',
+                    backgroundColor: 'rgba(66, 133, 244, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                },
+                {
+                    label: 'Expenses',
+                    data: [],
+                    borderColor: '#DB4437',
+                    backgroundColor: 'rgba(219, 68, 55, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        boxWidth: 6
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += '$' + context.parsed.y.toLocaleString();
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        display: false
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // Create Financial Ratios Chart
+    const financialRatiosCtx = document.getElementById('financialRatiosChart').getContext('2d');
+    financialRatiosChart = new Chart(financialRatiosCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                backgroundColor: [
+                    '#4285F4', // Current Ratio - Blue
+                    '#0F9D58', // Quick Ratio - Green
+                    '#F4B400', // Debt Ratio - Yellow
+                    '#DB4437', // Profit Margin - Red
+                    '#673AB7'  // ROI - Purple
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.formattedValue;
+                            return `${label}: ${value}`;
+                        }
+                    }
+                }
+            },
+            cutout: '70%'
+        }
+    });
+}
+
+// Setup time filter buttons
+function setupTimeFilters() {
+    const filterButtons = document.querySelectorAll('.time-filter');
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Remove active class from all buttons
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            
+            // Add active class to clicked button
+            this.classList.add('active');
+            
+            // Get selected time range
+            const timeRange = this.getAttribute('data-range');
+            currentTimeRange = timeRange;
+            
+            // Load chart data for selected time range
+            loadChartData(timeRange);
+        });
+    });
+}
+
+// Load chart data via AJAX
+function loadChartData(timeRange) {
+    // Show loading spinners
+    const loaders = document.querySelectorAll('.chart-loader');
+    loaders.forEach(loader => loader.classList.remove('d-none'));
+    
+    // Add loading class to chart containers
+    const chartContainers = document.querySelectorAll('.chart-container');
+    chartContainers.forEach(container => container.classList.add('loading'));
+    
+    // AJAX request to get chart data
+    fetch(`/api/charts/financial-data?timeRange=${timeRange}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Update the charts with new data
+            updateRevenueExpensesChart(data.revenueExpenses);
+            updateFinancialRatiosChart(data.ratios);
+            
+            // Hide loading indicators
+            loaders.forEach(loader => loader.classList.add('d-none'));
+            chartContainers.forEach(container => container.classList.remove('loading'));
+        })
+        .catch(error => {
+            console.error('Error fetching chart data:', error);
+            
+            // Hide loading indicators
+            loaders.forEach(loader => loader.classList.add('d-none'));
+            chartContainers.forEach(container => container.classList.remove('loading'));
+            
+            // Show error message or fallback to sample data
+            useSampleData(timeRange);
+        });
+}
+
+// Update Revenue vs Expenses Chart
+function updateRevenueExpensesChart(data) {
+    if (!data || data.labels.length === 0) {
+        showEmptyState('revenueExpensesChart', true);
+        return;
+    }
+    
+    showEmptyState('revenueExpensesChart', false);
+    
+    // Update chart data
+    revenueExpensesChart.data.labels = data.labels;
+    revenueExpensesChart.data.datasets[0].data = data.revenue;
+    revenueExpensesChart.data.datasets[1].data = data.expenses;
+    
+    // Update chart
+    revenueExpensesChart.update();
+}
+
+// Update Financial Ratios Chart
+function updateFinancialRatiosChart(data) {
+    if (!data || data.labels.length === 0) {
+        showEmptyState('financialRatiosChart', true);
+        document.querySelector('.ratio-legend').classList.add('d-none');
+        return;
+    }
+    
+    showEmptyState('financialRatiosChart', false);
+    
+    // Update chart data
+    financialRatiosChart.data.labels = data.labels;
+    financialRatiosChart.data.datasets[0].data = data.values;
+    
+    // Update chart
+    financialRatiosChart.update();
+    
+    // Update legend
+    updateRatioLegend(data.labels, financialRatiosChart.data.datasets[0].backgroundColor);
+}
+
+// Update ratio legend
+function updateRatioLegend(labels, colors) {
+    const legendContainer = document.querySelector('.ratio-legend');
+    const legendList = legendContainer.querySelector('ul');
+    
+    // Clear existing legend items
+    legendList.innerHTML = '';
+    
+    // Add new legend items
+    labels.forEach((label, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <span class="color-indicator" style="background-color: ${colors[index]}"></span>
+            <span>${label}</span>
+        `;
+        legendList.appendChild(li);
+    });
+    
+    // Show the legend
+    legendContainer.classList.remove('d-none');
+}
+
+// Show/hide empty state message
+function showEmptyState(chartId, show) {
+    const canvas = document.getElementById(chartId);
+    const chartContainer = canvas.closest('.chart-container');
+    const emptyState = canvas.closest('.card-body').querySelector('.chart-empty-state');
+    
+    if (show) {
+        chartContainer.style.display = 'none';
+        emptyState.classList.remove('d-none');
+    } else {
+        chartContainer.style.display = 'block';
+        emptyState.classList.add('d-none');
+    }
+}
+
+// Use sample data when API fails
+function useSampleData(timeRange) {
+    let sampleData = {};
+    
+    if (timeRange === 'month') {
+        sampleData = {
+            revenueExpenses: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                revenue: [42500, 45000, 48000, 51000],
+                expenses: [35000, 36000, 35500, 37500]
+            },
+            ratios: {
+                labels: ['Current Ratio', 'Quick Ratio', 'Debt Ratio', 'Profit Margin', 'ROI'],
+                values: [2.1, 1.8, 0.45, 0.18, 0.12]
+            }
+        };
+    } else if (timeRange === 'quarter') {
+        sampleData = {
+            revenueExpenses: {
+                labels: ['Jan', 'Feb', 'Mar'],
+                revenue: [125000, 138000, 152000],
+                expenses: [98000, 105000, 110000]
+            },
+            ratios: {
+                labels: ['Current Ratio', 'Quick Ratio', 'Debt Ratio', 'Profit Margin', 'ROI'],
+                values: [2.2, 1.7, 0.43, 0.22, 0.14]
+            }
+        };
+    } else if (timeRange === 'year') {
+        sampleData = {
+            revenueExpenses: {
+                labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+                revenue: [415000, 465000, 490000, 520000],
+                expenses: [313000, 345000, 360000, 380000]
+            },
+            ratios: {
+                labels: ['Current Ratio', 'Quick Ratio', 'Debt Ratio', 'Profit Margin', 'ROI'],
+                values: [2.3, 1.6, 0.40, 0.24, 0.15]
+            }
+        };
+    } else { // All time
+        sampleData = {
+            revenueExpenses: {
+                labels: ['2020', '2021', '2022', '2023'],
+                revenue: [1450000, 1680000, 1850000, 2100000],
+                expenses: [1180000, 1350000, 1460000, 1620000]
+            },
+            ratios: {
+                labels: ['Current Ratio', 'Quick Ratio', 'Debt Ratio', 'Profit Margin', 'ROI'],
+                values: [2.4, 1.5, 0.38, 0.25, 0.17]
+            }
+        };
+    }
+    
+    // Update charts with sample data
+    updateRevenueExpensesChart(sampleData.revenueExpenses);
+    updateFinancialRatiosChart(sampleData.ratios);
+}
+
+// Load AI Insights via AJAX
+function loadAIInsights() {
+    // Show loading spinner
+    const loader = document.querySelector('.insights-loader');
+    if (loader) loader.classList.remove('d-none');
+    
+    // Hide error message if visible
+    const errorContainer = document.getElementById('insights-error');
+    if (errorContainer) errorContainer.classList.add('d-none');
+    
+    // Show placeholder content
+    const insightsContainer = document.getElementById('insights-container');
+    if (!insightsContainer) return;
+    
+    insightsContainer.innerHTML = `
+        <div class="placeholder-glow mb-4">
+            <div class="d-flex align-items-center mb-3">
+                <span class="placeholder bg-primary rounded p-2 me-2" style="width: 30px; height: 30px;"></span>
+                <span class="placeholder col-4"></span>
+            </div>
+            <span class="placeholder col-12"></span>
+            <span class="placeholder col-12"></span>
+            <span class="placeholder col-10"></span>
+        </div>
+        
+        <div class="placeholder-glow mb-4">
+            <div class="d-flex align-items-center mb-3">
+                <span class="placeholder bg-success rounded p-2 me-2" style="width: 30px; height: 30px;"></span>
+                <span class="placeholder col-5"></span>
+            </div>
+            <span class="placeholder col-12"></span>
+            <span class="placeholder col-11"></span>
+            <span class="placeholder col-9"></span>
+        </div>
+        
+        <div class="placeholder-glow mb-4">
+            <div class="d-flex align-items-center mb-3">
+                <span class="placeholder bg-warning rounded p-2 me-2" style="width: 30px; height: 30px;"></span>
+                <span class="placeholder col-3"></span>
+            </div>
+            <span class="placeholder col-12"></span>
+            <span class="placeholder col-12"></span>
+            <span class="placeholder col-8"></span>
+        </div>
+    `;
+    
+    // Fetch insights from API with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+    
+    fetch('/api/insights', { signal: controller.signal })
+        .then(response => {
+            clearTimeout(timeoutId);
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to load insights');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success && data.insights) {
+                // Process and display the insights
+                displayInsights(data.insights);
+            } else {
+                throw new Error(data.message || 'Failed to generate insights');
+            }
+            
+            // Hide loading spinner
+            if (loader) loader.classList.add('d-none');
+        })
+        .catch(error => {
+            console.error('Error loading insights:', error);
+            
+            // Hide loading spinner
+            if (loader) loader.classList.add('d-none');
+            
+            // Show error message
+            if (insightsContainer) insightsContainer.innerHTML = '';
+            if (errorContainer) errorContainer.classList.remove('d-none');
+            
+            // Use sample data as fallback
+            useSampleInsights();
+        });
+}
+
+// Display insights in the UI
+function displayInsights(insightsMarkdown) {
+    // Use marked.js to convert markdown to HTML
+    let htmlContent;
+    try {
+        htmlContent = marked.parse(insightsMarkdown);
+    } catch (e) {
+        console.error("Error parsing markdown:", e);
+        htmlContent = insightsMarkdown.replace(/\n/g, '<br>');
+    }
+    
+    // Extract insights
+    const container = document.createElement('div');
+    container.innerHTML = htmlContent;
+    
+    // Find all bolded sections (likely insight titles)
+    const boldElements = container.querySelectorAll('strong');
+    
+    // Prepare insights container
+    const insightsContainer = document.getElementById('insights-container');
+    insightsContainer.innerHTML = '';
+    
+    // Icons and colors for insights (in rotation)
+    const icons = [
+        { icon: 'chart-line', bg: 'bg-primary' },
+        { icon: 'arrow-trend-up', bg: 'bg-success' },
+        { icon: 'circle-exclamation', bg: 'bg-warning' },
+        { icon: 'lightbulb', bg: 'bg-info' },
+        { icon: 'chart-pie', bg: 'bg-danger' }
+    ];
+    
+    // Check if the response contains an error message
+    if (insightsMarkdown.toLowerCase().includes("error") || 
+        insightsMarkdown.toLowerCase().includes("couldn't generate") ||
+        insightsMarkdown.toLowerCase().includes("not available")) {
+        
+        // Show error message
+        document.getElementById('insights-error').classList.remove('d-none');
+        return;
+    }
+    
+    // If markdown parsing doesn't yield good results, just present as sections
+    if (boldElements.length < 3) {
+        // Split by newlines or double newlines
+        const sections = insightsMarkdown.split(/\n\n+/).filter(section => section.trim().length > 0);
+        
+        if (sections.length === 0) {
+            // No sections found, show entire text as one insight
+            const iconData = icons[0];
+            const insightItem = document.createElement('div');
+            insightItem.className = 'insight-item';
+            insightItem.innerHTML = `
+                <div class="insight-header">
+                    <div class="insight-icon ${iconData.bg}">
+                        <i class="fas fa-${iconData.icon}"></i>
+                    </div>
+                    <h6 class="insight-title">Financial Insight</h6>
+                </div>
+                <div class="insight-content">
+                    <p>${insightsMarkdown.replace(/\n/g, '<br>')}</p>
+                </div>
+            `;
+            insightsContainer.appendChild(insightItem);
+            return;
+        }
+        
+        sections.forEach((section, index) => {
+            const iconData = icons[index % icons.length];
+            
+            // Create insight item
+            const insightItem = document.createElement('div');
+            insightItem.className = 'insight-item';
+            
+            // Find a title (first line or first sentence)
+            let title = section.split('\n')[0].replace(/[#*_]/g, '').trim();
+            // If title is too long, use first sentence
+            if (title.length > 50) {
+                title = section.split('.')[0].replace(/[#*_]/g, '').trim() + '.';
+            }
+            // If still too long, truncate
+            if (title.length > 50) {
+                title = title.substring(0, 50) + '...';
+            }
+            
+            let content = section;
+            if (title && section.includes(title)) {
+                content = section.replace(title, '').trim();
+            }
+            
+            // Format with icon and content
+            insightItem.innerHTML = `
+                <div class="insight-header">
+                    <div class="insight-icon ${iconData.bg}">
+                        <i class="fas fa-${iconData.icon}"></i>
+                    </div>
+                    <h6 class="insight-title">${title}</h6>
+                </div>
+                <div class="insight-content">
+                    <p>${content.replace(/\n/g, '<br>')}</p>
+                </div>
+            `;
+            
+            insightsContainer.appendChild(insightItem);
+        });
+    } else {
+        // Process each bold element as an insight title
+        boldElements.forEach((boldEl, index) => {
+            if (index > 4) return; // Limit to 5 insights
+            
+            const title = boldEl.textContent;
+            const iconData = icons[index % icons.length];
+            
+            // Find content - everything until the next bold element or the end
+            let content = '';
+            let nextEl = boldEl.parentNode.nextSibling;
+            while (nextEl && !nextEl.querySelector('strong')) {
+                if (nextEl.textContent.trim()) {
+                    content += nextEl.textContent + ' ';
+                }
+                nextEl = nextEl.nextSibling;
+            }
+            
+            // Create insight item
+            const insightItem = document.createElement('div');
+            insightItem.className = 'insight-item';
+            insightItem.innerHTML = `
+                <div class="insight-header">
+                    <div class="insight-icon ${iconData.bg}">
+                        <i class="fas fa-${iconData.icon}"></i>
+                    </div>
+                    <h6 class="insight-title">${title}</h6>
+                </div>
+                <div class="insight-content">
+                    <p>${content}</p>
+                </div>
+            `;
+            
+            insightsContainer.appendChild(insightItem);
+        });
+    }
+    
+    // If no insights were generated, show the error
+    if (insightsContainer.children.length === 0) {
+        document.getElementById('insights-error').classList.remove('d-none');
+    }
+}
+
+// Use sample insights when API fails or no data available
+function useSampleInsights() {
+    const insightsContainer = document.getElementById('insights-container');
+    insightsContainer.innerHTML = '';
+    
+    const sampleInsights = [
+        {
+            title: 'Revenue Growth Trend',
+            content: 'Your revenue shows a steady growth rate of 12.3% over the past year. This is above industry average of 8.7% and indicates strong market performance.',
+            icon: 'chart-line',
+            bg: 'bg-primary'
+        },
+        {
+            title: 'Profitability Analysis',
+            content: 'Your profit margin (15.2%) is healthy but has decreased slightly from the previous quarter (16.8%). Consider reviewing cost structures to identify opportunities for optimization.',
+            icon: 'chart-pie',
+            bg: 'bg-success'
+        },
+        {
+            title: 'Cash Flow Insight',
+            content: 'Operating cash flow has improved by 18.5% year-over-year, providing good liquidity for operations and potential investments.',
+            icon: 'money-bill-wave',
+            bg: 'bg-info'
+        },
+        {
+            title: 'Expense Alert',
+            content: 'Administrative expenses are growing faster than revenue (14.2% vs 12.3%). This trend could impact profitability if not addressed.',
+            icon: 'circle-exclamation',
+            bg: 'bg-warning'
+        },
+        {
+            title: 'Strategic Recommendation',
+            content: 'Based on your current financial trends, expanding product lines could leverage your strong cash position and accelerate growth.',
+            icon: 'lightbulb',
+            bg: 'bg-danger'
+        }
+    ];
+    
+    sampleInsights.forEach(insight => {
+        const insightItem = document.createElement('div');
+        insightItem.className = 'insight-item';
+        insightItem.innerHTML = `
+            <div class="insight-header">
+                <div class="insight-icon ${insight.bg}">
+                    <i class="fas fa-${insight.icon}"></i>
+                </div>
+                <h6 class="insight-title">${insight.title}</h6>
+            </div>
+            <div class="insight-content">
+                <p>${insight.content}</p>
+            </div>
+        `;
+        
+        insightsContainer.appendChild(insightItem);
+    });
+    
+    // Hide the error message as we're showing sample insights
+    document.getElementById('insights-error').classList.add('d-none');
+}
+</script>

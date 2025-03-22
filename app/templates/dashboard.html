@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Financial Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid dashboard-container">
+    <!-- Dashboard Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="dashboard-title">Financial Dashboard</h1>
+            <p class="text-muted">Overview of your financial metrics and performance indicators</p>
+        </div>
+        <div class="col-auto">
+            <div class="d-flex">
+                <button class="btn btn-outline-secondary me-2" id="refreshDashboard">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <a href="{{ url_for('core.upload_file') }}" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> Upload New Data
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Metrics Summary Cards -->
+    <div class="row mb-4">
+        {% include "dashboard/_metrics.html" %}
+    </div>
+
+    <!-- Charts and Analysis Section -->
+    <div class="row mb-4">
+        {% include "dashboard/_charts.html" %}
+    </div>
+    
+    <!-- AI Insights and Recent Files Section -->
+    <div class="row mb-4">
+        <!-- AI Insights -->
+        <div class="col-lg-6 mb-4 mb-lg-0">
+            {% include "dashboard/_insights.html" %}
+        </div>
+        
+        <!-- Recent Files -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Recent Financial Files</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_files %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Filename</th>
+                                    <th>Type</th>
+                                    <th>Uploaded</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for file in recent_files %}
+                                <tr>
+                                    <td>{{ file.filename }}</td>
+                                    <td>{{ file.file_type }}</td>
+                                    <td>{{ file.upload_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>
+                                        <a href="{{ url_for('core.view_file', file_id=file.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="p-4 text-center">
+                        <img src="{{ url_for('static', filename='img/empty_files.svg') }}" alt="No files" class="mb-3" style="max-width: 150px;">
+                        <h6>No financial files uploaded yet</h6>
+                        <p class="text-muted">Upload your financial data to get started with analysis</p>
+                        <a href="{{ url_for('core.upload_file') }}" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Upload File
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- What-If Analysis Component -->
+    {% include "dashboard/_what_if.html" %}
+
+    <!-- SMART Goals Section -->
+    {% include "dashboard/_smart.html" %}
+    
+    <!-- SWOT Analysis Section -->
+    {% include "dashboard/_swot.html" %}
+</div>
+
+<!-- Include dashboard JavaScript -->
+{% include "dashboard/_javascript.html" %}
+
+<!-- Include What-If Analysis JavaScript -->
+{% include "dashboard/_what_if_js.html" %}
+
+<!-- Include SWOT & SMART Goals JavaScript -->
+{% include "dashboard/_swot_smart_js.html" %}
+{% endblock %}

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Projections Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .report-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+        .report-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #0d6efd;
+        }
+        .report-subtitle {
+            font-size: 14px;
+            color: #6c757d;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
+            color: #0d6efd;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .text-end {
+            text-align: right;
+        }
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 50px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+        .page-number {
+            text-align: right;
+            font-size: 12px;
+            color: #6c757d;
+        }
+        .chart-placeholder {
+            background-color: #f8f9fa;
+            height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px dashed #ccc;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="report-header">
+        <div class="report-title">Financial Projections Report</div>
+        <div class="report-subtitle">Generated on {{ timestamp }} for {{ user.username }}</div>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">Projection Summary</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Period</th>
+                    <th class="text-end">Revenue</th>
+                    <th class="text-end">Costs</th>
+                    <th class="text-end">Profit</th>
+                    <th class="text-end">Profit Margin</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in projection_data %}
+                <tr>
+                    <td>{{ item.period }}</td>
+                    <td class="text-end">${{ '{:,.0f}'.format(item.revenue) }}</td>
+                    <td class="text-end">${{ '{:,.0f}'.format(item.cost) }}</td>
+                    <td class="text-end">${{ '{:,.0f}'.format(item.profit) }}</td>
+                    <td class="text-end">{{ '{:.1%}'.format(item.profitMargin) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">Projection Visualization</div>
+        <div class="chart-placeholder">
+            <i>Chart visualization not available in PDF export</i>
+        </div>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">Key Growth Metrics</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>Value</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Revenue Growth Rate</td>
+                    <td>{{ '{:.1%}'.format((projection_data[-1].revenue / projection_data[0].revenue - 1)) }}</td>
+                    <td>Overall growth from first to last period</td>
+                </tr>
+                <tr>
+                    <td>Cost Growth Rate</td>
+                    <td>{{ '{:.1%}'.format((projection_data[-1].cost / projection_data[0].cost - 1)) }}</td>
+                    <td>Overall growth from first to last period</td>
+                </tr>
+                <tr>
+                    <td>Profit Growth Rate</td>
+                    <td>{{ '{:.1%}'.format((projection_data[-1].profit / projection_data[0].profit - 1)) }}</td>
+                    <td>Overall growth from first to last period</td>
+                </tr>
+                <tr>
+                    <td>Average Profit Margin</td>
+                    <td>{{ '{:.1%}'.format(sum(item.profitMargin for item in projection_data) / projection_data|length) }}</td>
+                    <td>Average across all periods</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="footer">
+        <p>This report was automatically generated by FinGenius Financial Analysis Platform.</p>
+        <p>© {{ timestamp[:4] }} FinGenius. All rights reserved.</p>
+    </div>
+    
+    <div class="page-number">Page 1 of 1</div>
+</body>
+</html>

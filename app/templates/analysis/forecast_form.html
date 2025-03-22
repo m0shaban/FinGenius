@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Forecast: {{ file.filename }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('core.dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('core.view_file', file_id=file.id) }}">{{ file.filename }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Forecast</li>
+            </ol>
+        </nav>
+        <h1>Financial Forecasting</h1>
+        <p>Generate financial forecasts for: {{ file.filename }}</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h5>Forecast Settings</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="column" class="form-label">Select Column to Forecast</label>
+                        <select class="form-select" id="column" name="column" required>
+                            {% for column in numeric_columns %}
+                            <option value="{{ column }}">{{ column }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Choose the financial metric you want to forecast.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="periods" class="form-label">Number of Periods to Forecast</label>
+                        <input type="number" class="form-control" id="periods" name="periods" value="3" min="1" max="12">
+                        <div class="form-text">How many future periods do you want to predict?</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <button type="submit" class="btn btn-primary">Generate Forecast</button>
+                        <a href="{{ url_for('analysis.analyze_file', file_id=file.id) }}" class="btn btn-secondary">Back to Analysis</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5>About Forecasting</h5>
+            </div>
+            <div class="card-body">
+                <p>The forecasting tool uses a simple linear regression model to predict future values based on historical trends.</p>
+                <p><strong>When to use:</strong></p>
+                <ul>
+                    <li>When your data shows a relatively consistent trend over time</li>
+                    <li>When you want to get a quick estimate of future performance</li>
+                    <li>For short to medium-term forecasting</li>
+                </ul>
+                <p><strong>Limitations:</strong></p>
+                <ul>
+                    <li>Simple forecasting doesn't account for seasonality or complex patterns</li>
+                    <li>Accuracy decreases the further into the future you predict</li>
+                    <li>External factors that may affect your business aren't considered</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

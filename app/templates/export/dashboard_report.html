@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .report-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+        .report-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #0d6efd;
+        }
+        .report-subtitle {
+            font-size: 14px;
+            color: #6c757d;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
+            color: #0d6efd;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .metric-value {
+            font-weight: bold;
+        }
+        .metric-change.positive {
+            color: #198754;
+        }
+        .metric-change.negative {
+            color: #dc3545;
+        }
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 50px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+        .page-number {
+            text-align: right;
+            font-size: 12px;
+            color: #6c757d;
+        }
+        .chart-placeholder {
+            background-color: #f8f9fa;
+            height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px dashed #ccc;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="report-header">
+        <div class="report-title">FinGenius Dashboard Report</div>
+        <div class="report-subtitle">Generated on {{ timestamp }} for {{ user.username }}</div>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">Key Financial Metrics</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>Current Value</th>
+                    <th>Previous Value</th>
+                    <th>Change</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Revenue</td>
+                    <td class="metric-value">$485,726</td>
+                    <td>$450,000</td>
+                    <td class="metric-change positive">+$35,726 (+7.9%)</td>
+                </tr>
+                <tr>
+                    <td>Profit</td>
+                    <td class="metric-value">$142,590</td>
+                    <td>$135,000</td>
+                    <td class="metric-change positive">+$7,590 (+5.6%)</td>
+                </tr>
+                <tr>
+                    <td>ROI</td>
+                    <td class="metric-value">18.2%</td>
+                    <td>17.5%</td>
+                    <td class="metric-change positive">+0.7 points</td>
+                </tr>
+                <tr>
+                    <td>YoY Growth</td>
+                    <td class="metric-value">15.4%</td>
+                    <td>14.2%</td>
+                    <td class="metric-change positive">+1.2 points</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">Revenue vs Expenses</div>
+        <div class="chart-placeholder">
+            <i>Chart visualization not available in PDF export</i>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Period</th>
+                    <th>Revenue</th>
+                    <th>Expenses</th>
+                    <th>Profit</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Week 1</td>
+                    <td>$42,500</td>
+                    <td>$35,000</td>
+                    <td>$7,500</td>
+                </tr>
+                <tr>
+                    <td>Week 2</td>
+                    <td>$45,000</td>
+                    <td>$36,000</td>
+                    <td>$9,000</td>
+                </tr>
+                <tr>
+                    <td>Week 3</td>
+                    <td>$48,000</td>
+                    <td>$35,500</td>
+                    <td>$12,500</td>
+                </tr>
+                <tr>
+                    <td>Week 4</td>
+                    <td>$51,000</td>
+                    <td>$37,500</td>
+                    <td>$13,500</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">Financial Ratios</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Ratio</th>
+                    <th>Value</th>
+                    <th>Industry Average</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Current Ratio</td>
+                    <td>2.1</td>
+                    <td>1.8</td>
+                    <td class="metric-change positive">Above Average</td>
+                </tr>
+                <tr>
+                    <td>Quick Ratio</td>
+                    <td>1.8</td>
+                    <td>1.5</td>
+                    <td class="metric-change positive">Above Average</td>
+                </tr>
+                <tr>
+                    <td>Debt Ratio</td>
+                    <td>0.45</td>
+                    <td>0.5</td>
+                    <td class="metric-change positive">Better than Average</td>
+                </tr>
+                <tr>
+                    <td>Profit Margin</td>
+                    <td>18%</td>
+                    <td>15%</td>
+                    <td class="metric-change positive">Above Average</td>
+                </tr>
+                <tr>
+                    <td>ROI</td>
+                    <td>12%</td>
+                    <td>10%</td>
+                    <td class="metric-change positive">Above Average</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="footer">
+        <p>This report was automatically generated by FinGenius Financial Analysis Platform.</p>
+        <p>© {{ timestamp[:4] }} FinGenius. All rights reserved.</p>
+    </div>
+    
+    <div class="page-number">Page 1 of 1</div>
+</body>
+</html>

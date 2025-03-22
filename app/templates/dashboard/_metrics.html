@@ -1,0 +1,142 @@
+<!-- Revenue Metric Card -->
+<div class="col-md-6 col-lg-3 mb-4">
+    <div class="card h-100 border-0 shadow-sm metric-card">
+        <div class="card-body">
+            <div class="d-flex align-items-center mb-3">
+                <div class="metric-icon bg-primary-subtle me-3">
+                    <i class="fas fa-dollar-sign text-primary"></i>
+                </div>
+                <h6 class="metric-title mb-0">Revenue</h6>
+            </div>
+            <h3 class="metric-value mb-1" id="revenue-metric">
+                <span class="placeholder-glow">
+                    <span class="placeholder col-4">Loading...</span>
+                </span>
+            </h3>
+            <div class="d-flex align-items-center">
+                <span class="metric-change" id="revenue-change">
+                    <i class="fas fa-caret-up text-success me-1"></i>
+                    <span class="placeholder-glow">
+                        <span class="placeholder col-2">...</span>
+                    </span>
+                </span>
+                <span class="text-muted ms-2 small">vs last period</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Profit Metric Card -->
+<div class="col-md-6 col-lg-3 mb-4">
+    <div class="card h-100 border-0 shadow-sm metric-card">
+        <div class="card-body">
+            <div class="d-flex align-items-center mb-3">
+                <div class="metric-icon bg-success-subtle me-3">
+                    <i class="fas fa-chart-line text-success"></i>
+                </div>
+                <h6 class="metric-title mb-0">Profit</h6>
+            </div>
+            <h3 class="metric-value mb-1" id="profit-metric">
+                <span class="placeholder-glow">
+                    <span class="placeholder col-4">Loading...</span>
+                </span>
+            </h3>
+            <div class="d-flex align-items-center">
+                <span class="metric-change" id="profit-change">
+                    <i class="fas fa-caret-up text-success me-1"></i>
+                    <span class="placeholder-glow">
+                        <span class="placeholder col-2">...</span>
+                    </span>
+                </span>
+                <span class="text-muted ms-2 small">vs last period</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ROI Metric Card -->
+<div class="col-md-6 col-lg-3 mb-4">
+    <div class="card h-100 border-0 shadow-sm metric-card">
+        <div class="card-body">
+            <div class="d-flex align-items-center mb-3">
+                <div class="metric-icon bg-info-subtle me-3">
+                    <i class="fas fa-percentage text-info"></i>
+                </div>
+                <h6 class="metric-title mb-0">ROI</h6>
+            </div>
+            <h3 class="metric-value mb-1" id="roi-metric">
+                <span class="placeholder-glow">
+                    <span class="placeholder col-4">Loading...</span>
+                </span>
+            </h3>
+            <div class="d-flex align-items-center">
+                <span class="metric-change" id="roi-change">
+                    <i class="fas fa-caret-down text-danger me-1"></i>
+                    <span class="placeholder-glow">
+                        <span class="placeholder col-2">...</span>
+                    </span>
+                </span>
+                <span class="text-muted ms-2 small">vs last period</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- YoY Growth Metric Card -->
+<div class="col-md-6 col-lg-3 mb-4">
+    <div class="card h-100 border-0 shadow-sm metric-card">
+        <div class="card-body">
+            <div class="d-flex align-items-center mb-3">
+                <div class="metric-icon bg-warning-subtle me-3">
+                    <i class="fas fa-arrow-trend-up text-warning"></i>
+                </div>
+                <h6 class="metric-title mb-0">YoY Growth</h6>
+            </div>
+            <h3 class="metric-value mb-1" id="growth-metric">
+                <span class="placeholder-glow">
+                    <span class="placeholder col-4">Loading...</span>
+                </span>
+            </h3>
+            <div class="d-flex align-items-center">
+                <span class="metric-change" id="growth-change">
+                    <i class="fas fa-caret-up text-success me-1"></i>
+                    <span class="placeholder-glow">
+                        <span class="placeholder col-2">...</span>
+                    </span>
+                </span>
+                <span class="text-muted ms-2 small">vs previous year</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .metric-card {
+        transition: transform 0.2s;
+    }
+    .metric-card:hover {
+        transform: translateY(-5px);
+    }
+    .metric-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .metric-icon i {
+        font-size: 1.5rem;
+    }
+    .metric-title {
+        font-weight: 600;
+        color: #6c757d;
+    }
+    .metric-value {
+        font-weight: 700;
+    }
+    .metric-change {
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+</style>

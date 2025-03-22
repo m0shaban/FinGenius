@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+
+{% block title %}{{ file.filename }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb and file info header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('core.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ file.filename }}</li>
+                </ol>
+            </nav>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-1">{{ file.filename }}</h1>
+                    <p class="text-muted mb-0">Uploaded on {{ file.upload_date.strftime('%Y-%m-%d %H:%M') }}</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('core.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-th-large me-1"></i> Dashboard
+                    </a>
+                    <a href="{{ url_for('analysis.analyze_file', file_id=file.id) }}" class="btn btn-primary">
+                        <i class="fas fa-chart-bar me-1"></i> Analyze
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- File info cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3 mb-md-0">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">File Type</h6>
+                    <h5 class="card-title">
+                        {% if file.file_type == 'csv' %}
+                        <i class="fas fa-file-csv text-success me-2"></i>
+                        {% else %}
+                        <i class="fas fa-file-excel text-success me-2"></i>
+                        {% endif %}
+                        {{ file.file_type }}
+                    </h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3 mb-md-0">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Rows</h6>
+                    <h5 class="card-title">
+                        <i class="fas fa-list-ol text-primary me-2"></i>
+                        {% if data and data.shape %}
+                        {{ data.shape[0] }}
+                        {% else %}
+                        <span class="text-muted">Unknown</span>
+                        {% endif %}
+                    </h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3 mb-md-0">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Columns</h6>
+                    <h5 class="card-title">
+                        <i class="fas fa-table-columns text-primary me-2"></i>
+                        {% if data and data.shape %}
+                        {{ data.shape[1] }}
+                        {% else %}
+                        <span class="text-muted">Unknown</span>
+                        {% endif %}
+                    </h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Last Analysis</h6>
+                    <h5 class="card-title">
+                        {% if last_analysis %}
+                        <i class="fas fa-calendar-check text-success me-2"></i>
+                        {{ last_analysis.created_date.strftime('%Y-%m-%d') }}
+                        {% else %}
+                        <i class="fas fa-calendar-xmark text-muted me-2"></i>
+                        Not analyzed yet
+                        {% endif %}
+                    </h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error message if data is missing -->
+    {% if not data or not data.columns %}
+    <div class="alert alert-warning">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Warning:</strong> Could not read data from file. The file may be corrupted or in an unsupported format.
+    </div>
+    {% else %}
+    <!-- Column names -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Column Names</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for column in data.columns %}
+                        <div class="col-md-3 col-sm-4 mb-2">
+                            <div class="badge bg-light text-dark p-2 w-100 text-start">
+                                <i class="fas fa-table-columns text-primary me-2"></i>
+                                {{ column }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sample data -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Sample Data</h5>
+                    <div>
+                        <button class="btn btn-sm btn-outline-secondary" id="toggleAllColumns">
+                            <i class="fas fa-expand"></i> Toggle All Columns
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    {% for column in data.columns %}
+                                    <th class="column-header">{{ column }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in data.records[:5] %}
+                                <tr>
+                                    {% for column in data.columns %}
+                                    <td>{{ row[column] }}</td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if data.records|length > 5 %}
+                    <div class="text-center py-2 bg-light">
+                        <button class="btn btn-link" id="loadMoreRows">
+                            <i class="fas fa-chevron-down"></i> Show more rows
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Numeric Statistics -->
+    {% if stats and stats.columns %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Numeric Statistics</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th></th>
+                                    {% for column in stats.columns %}
+                                    <th class="text-center">{{ column }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for metric in stats.metrics %}
+                                <tr>
+                                    <th class="table-light">{{ metric }}</th>
+                                    {% for column in stats.columns %}
+                                    <td class="text-end">
+                                        {% if stats.data[metric][column] != None %}
+                                            {% if metric in ['count', 'min', 'max'] and column == 'Date' %}
+                                                {{ stats.data[metric][column] }}
+                                            {% elif column == 'Date' %}
+                                                {{ stats.data[metric][column] }}
+                                            {% else %}
+                                                {{ '{:,.2f}'.format(stats.data[metric][column]) }}
+                                            {% endif %}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <!-- Analysis Options -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Analysis Options</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3 col-sm-6">
+                            <a href="{{ url_for('analysis.analyze_file', file_id=file.id) }}" class="card h-100 border-0 shadow-sm text-decoration-none analysis-option-card">
+                                <div class="card-body text-center">
+                                    <div class="mb-3">
+                                        <span class="analysis-icon bg-primary">
+                                            <i class="fas fa-chart-line"></i>
+                                        </span>
+                                    </div>
+                                    <h6 class="card-title mb-0">Financial Analysis</h6>
+                                    <p class="text-muted small">Comprehensive financial metrics</p>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <a href="{{ url_for('core.dashboard') }}" class="card h-100 border-0 shadow-sm text-decoration-none analysis-option-card">
+                                <div class="card-body text-center">
+                                    <div class="mb-3">
+                                        <span class="analysis-icon bg-success">
+                                            <i class="fas fa-th-large"></i>
+                                        </span>
+                                    </div>
+                                    <h6 class="card-title mb-0">Dashboard</h6>
+                                    <p class="text-muted small">View performance overview</p>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <a href="{{ url_for('analysis.forecast', file_id=file.id) }}" class="card h-100 border-0 shadow-sm text-decoration-none analysis-option-card">
+                                <div class="card-body text-center">
+                                    <div class="mb-3">
+                                        <span class="analysis-icon bg-info">
+                                            <i class="fas fa-chart-area"></i>
+                                        </span>
+                                    </div>
+                                    <h6 class="card-title mb-0">Forecast</h6>
+                                    <p class="text-muted small">Future projections</p>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <a href="{{ url_for('chat.discuss_file', file_id=file.id) }}" class="card h-100 border-0 shadow-sm text-decoration-none analysis-option-card">
+                                <div class="card-body text-center">
+                                    <div class="mb-3">
+                                        <span class="analysis-icon bg-warning">
+                                            <i class="fas fa-brain"></i>
+                                        </span>
+                                    </div>
+                                    <h6 class="card-title mb-0">AI Insights</h6>
+                                    <p class="text-muted small">Ask questions about your data</p>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .analysis-option-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        color: inherit;
+    }
+    
+    .analysis-option-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+    
+    .analysis-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 54px;
+        height: 54px;
+        border-radius: 50%;
+        color: white;
+        font-size: 24px;
+    }
+    
+    .table-responsive {
+        max-height: 450px;
+    }
+    
+    .column-header {
+        white-space: nowrap;
+    }
+    
+    /* For toggling columns */
+    .narrow-column {
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load more rows button
+        const loadMoreBtn = document.getElementById('loadMoreRows');
+        if (loadMoreBtn) {
+            loadMoreBtn.addEventListener('click', function() {
+                const tbody = document.querySelector('table tbody');
+                // Clone and add more rows (in a real app this would fetch from server)
+                const existingRows = tbody.querySelectorAll('tr');
+                {% if data and data.records %}
+                if (existingRows.length >= {{ data.records|length }}) {
+                    loadMoreBtn.disabled = true;
+                    loadMoreBtn.innerHTML = 'All data loaded';
+                    return;
+                }
+                
+                for (let i = 0; i < 5 && (existingRows.length + i) < {{ data.records|length }}; i++) {
+                    const rowData = {{ data.records|tojson }}[existingRows.length + i];
+                    const newRow = document.createElement('tr');
+                    {% if data and data.columns %}
+                    {% for column in data.columns %}
+                    const cell{{ loop.index }} = document.createElement('td');
+                    cell{{ loop.index }}.textContent = rowData["{{ column }}"] !== null ? rowData["{{ column }}"] : '';
+                    newRow.appendChild(cell{{ loop.index }});
+                    {% endfor %}
+                    {% endif %}
+                    tbody.appendChild(newRow);
+                }
+                
+                // Disable button if all rows have been loaded
+                if (tbody.querySelectorAll('tr').length >= {{ data.records|length }}) {
+                    loadMoreBtn.disabled = true;
+                    loadMoreBtn.innerHTML = 'All data loaded';
+                }
+                {% endif %}
+            });
+        }
+        
+        // Toggle all columns button
+        const toggleColumnsBtn = document.getElementById('toggleAllColumns');
+        if (toggleColumnsBtn) {
+            toggleColumnsBtn.addEventListener('click', function() {
+                const allCells = document.querySelectorAll('th.column-header, td');
+                allCells.forEach(cell => {
+                    cell.classList.toggle('narrow-column');
+                });
+                
+                // Update button text
+                const isNarrow = document.querySelector('th.narrow-column');
+                if (isNarrow) {
+                    toggleColumnsBtn.innerHTML = '<i class="fas fa-expand"></i> Show Full Columns';
+                } else {
+                    toggleColumnsBtn.innerHTML = '<i class="fas fa-compress"></i> Condense Columns';
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

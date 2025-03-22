@@ -1,0 +1,445 @@
+{% extends "base.html" %}
+
+{% block title %}Financial Projections{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('core.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Financial Projections</li>
+                </ol>
+            </nav>
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h2 mb-0">Financial Projections</h1>
+                <a href="{{ url_for('core.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+                </a>
+            </div>
+            <p class="text-muted">Generate financial projections based on historical data and growth assumptions</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Configuration Panel -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Projection Settings</h5>
+                </div>
+                <div class="card-body">
+                    <form id="projectionForm">
+                        <!-- Data Source Selection -->
+                        <div class="mb-4">
+                            <h6 class="mb-3">Data Source</h6>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="dataSource" id="dataSourceFile" value="file" checked>
+                                <label class="form-check-label" for="dataSourceFile">
+                                    Use uploaded financial data
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="dataSource" id="dataSourceManual" value="manual">
+                                <label class="form-check-label" for="dataSourceManual">
+                                    Enter historical data manually
+                                </label>
+                            </div>
+                            
+                            <!-- File Selector (shown when dataSourceFile is selected) -->
+                            <div id="fileSelector" class="mt-3">
+                                <select class="form-select" id="fileSelect">
+                                    <option value="">Select a file...</option>
+                                    {% for file in recent_files %}
+                                    <option value="{{ file.id }}">{{ file.filename }} ({{ file.upload_date.strftime('%Y-%m-%d') }})</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text small">Select a recent financial file to use as base data.</div>
+                            </div>
+                            
+                            <!-- Manual Data Entry (hidden by default) -->
+                            <div id="manualDataEntry" class="mt-3 d-none">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Period</th>
+                                                <th>Revenue ($)</th>
+                                                <th>Costs ($)</th>
+                                                <th>Profit ($)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Previous Year Q1</td>
+                                                <td><input type="number" class="form-control form-control-sm manual-revenue" placeholder="0" step="1000"></td>
+                                                <td><input type="number" class="form-control form-control-sm manual-costs" placeholder="0" step="1000"></td>
+                                                <td class="manual-profit text-end">$0</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Previous Year Q2</td>
+                                                <td><input type="number" class="form-control form-control-sm manual-revenue" placeholder="0" step="1000"></td>
+                                                <td><input type="number" class="form-control form-control-sm manual-costs" placeholder="0" step="1000"></td>
+                                                <td class="manual-profit text-end">$0</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Previous Year Q3</td>
+                                                <td><input type="number" class="form-control form-control-sm manual-revenue" placeholder="0" step="1000"></td>
+                                                <td><input type="number" class="form-control form-control-sm manual-costs" placeholder="0" step="1000"></td>
+                                                <td class="manual-profit text-end">$0</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Previous Year Q4</td>
+                                                <td><input type="number" class="form-control form-control-sm manual-revenue" placeholder="0" step="1000"></td>
+                                                <td><input type="number" class="form-control form-control-sm manual-costs" placeholder="0" step="1000"></td>
+                                                <td class="manual-profit text-end">$0</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Current Year Q1</td>
+                                                <td><input type="number" class="form-control form-control-sm manual-revenue" placeholder="0" step="1000"></td>
+                                                <td><input type="number" class="form-control form-control-sm manual-costs" placeholder="0" step="1000"></td>
+                                                <td class="manual-profit text-end">$0</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Current Year Q2</td>
+                                                <td><input type="number" class="form-control form-control-sm manual-revenue" placeholder="0" step="1000"></td>
+                                                <td><input type="number" class="form-control form-control-sm manual-costs" placeholder="0" step="1000"></td>
+                                                <td class="manual-profit text-end">$0</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="form-text small">Enter your historical financial data for at least 4 quarters.</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Projection Parameters -->
+                        <div class="mb-4">
+                            <h6 class="mb-3">Projection Parameters</h6>
+                            
+                            <div class="mb-3">
+                                <label for="projectionPeriod" class="form-label">Projection Period</label>
+                                <select class="form-select" id="projectionPeriod">
+                                    <option value="6">6 Months</option>
+                                    <option value="12" selected>1 Year</option>
+                                    <option value="24">2 Years</option>
+                                    <option value="36">3 Years</option>
+                                    <option value="60">5 Years</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="projectionInterval" class="form-label">Time Interval</label>
+                                <select class="form-select" id="projectionInterval">
+                                    <option value="month">Monthly</option>
+                                    <option value="quarter" selected>Quarterly</option>
+                                    <option value="year">Yearly</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="seasonalityToggle" class="form-check-label">
+                                    <input type="checkbox" class="form-check-input" id="seasonalityToggle">
+                                    Consider Seasonality
+                                </label>
+                                <div class="form-text small">Apply seasonal patterns based on historical data.</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Growth Assumptions -->
+                        <div class="mb-4">
+                            <h6 class="mb-3">Growth Assumptions</h6>
+                            
+                            <div class="mb-3">
+                                <label for="revenueGrowth" class="form-label d-flex justify-content-between">
+                                    <span>Revenue Growth Rate</span>
+                                    <span id="revenueGrowthValue">5%</span>
+                                </label>
+                                <input type="range" class="form-range" id="revenueGrowth" min="-20" max="50" step="0.5" value="5">
+                                <div class="d-flex justify-content-between small text-muted">
+                                    <span>-20%</span>
+                                    <span>50%</span>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="costGrowth" class="form-label d-flex justify-content-between">
+                                    <span>Cost Growth Rate</span>
+                                    <span id="costGrowthValue">3%</span>
+                                </label>
+                                <input type="range" class="form-range" id="costGrowth" min="-15" max="40" step="0.5" value="3">
+                                <div class="d-flex justify-content-between small text-muted">
+                                    <span>-15%</span>
+                                    <span>40%</span>
+                                </div>
+                            </div>
+                            
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="useHistoricalGrowth" checked>
+                                <label class="form-check-label" for="useHistoricalGrowth">
+                                    Auto-calculate from historical data
+                                </label>
+                                <div class="form-text small">Override manual growth rates with calculated rates from historical data.</div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="button" id="generateProjections" class="btn btn-primary">
+                                <i class="fas fa-calculator me-1"></i> Generate Projections
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results Panel -->
+        <div class="col-lg-8">
+            <!-- Projection Charts -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Financial Projections</h5>
+                    <div class="d-flex align-items-center">
+                        <div class="btn-group me-2" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="viewCombined">Combined</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary active" id="viewSeparate">Separate</button>
+                        </div>
+                        {% with section="projection", id="1", include_png=True, chart_id="combinedProjectionChart", kwargs={} %}
+                        {% include "components/_export_buttons.html" %}
+                        {% endwith %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="projection-loading" class="text-center py-5 d-none">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p>Generating projections...</p>
+                    </div>
+                    
+                    <div id="projection-empty" class="text-center py-5">
+                        <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                        <h5>No Projections Yet</h5>
+                        <p class="text-muted">Configure your projection settings and click "Generate Projections" to see financial forecasts.</p>
+                    </div>
+                    
+                    <div id="projection-results" class="d-none">
+                        <!-- Combined View -->
+                        <div id="combinedChartView" class="chart-container mb-4 d-none" style="position: relative; height: 350px;">
+                            <canvas id="combinedProjectionChart"></canvas>
+                        </div>
+                        
+                        <!-- Separate Views -->
+                        <div id="separateChartView">
+                            <!-- Revenue Projection -->
+                            <div class="chart-container mb-4" style="position: relative; height: 220px;">
+                                <canvas id="revenueProjectionChart"></canvas>
+                            </div>
+                            
+                            <!-- Cost Projection -->
+                            <div class="chart-container mb-4" style="position: relative; height: 220px;">
+                                <canvas id="costProjectionChart"></canvas>
+                            </div>
+                            
+                            <!-- Profit Projection -->
+                            <div class="chart-container" style="position: relative; height: 220px;">
+                                <canvas id="profitProjectionChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Key Metrics -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Key Metrics & Growth</h5>
+                </div>
+                <div class="card-body">
+                    <div id="metrics-empty" class="text-center py-4">
+                        <p class="text-muted">Metrics will appear after generating projections.</p>
+                    </div>
+                    
+                    <div id="metrics-results" class="d-none">
+                        <div class="row">
+                            <!-- Revenue Metrics -->
+                            <div class="col-md-4 mb-3">
+                                <div class="card border-0 bg-light h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <div class="metric-icon bg-primary-subtle me-2">
+                                                <i class="fas fa-chart-line text-primary"></i>
+                                            </div>
+                                            <h6 class="mb-0">Revenue Growth</h6>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span>Annual Growth Rate:</span>
+                                            <span class="badge bg-primary" id="revenueAnnualGrowth">+12%</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span>End of Period Projection:</span>
+                                            <span class="text-primary fw-bold" id="revenueEndValue">$1,250,000</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span>Overall Growth:</span>
+                                            <span class="badge bg-primary" id="revenueOverallGrowth">+24%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Cost Metrics -->
+                            <div class="col-md-4 mb-3">
+                                <div class="card border-0 bg-light h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <div class="metric-icon bg-danger-subtle me-2">
+                                                <i class="fas fa-chart-area text-danger"></i>
+                                            </div>
+                                            <h6 class="mb-0">Cost Growth</h6>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span>Annual Growth Rate:</span>
+                                            <span class="badge bg-danger" id="costAnnualGrowth">+8%</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span>End of Period Projection:</span>
+                                            <span class="text-danger fw-bold" id="costEndValue">$950,000</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span>Overall Growth:</span>
+                                            <span class="badge bg-danger" id="costOverallGrowth">+16%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Profit Metrics -->
+                            <div class="col-md-4 mb-3">
+                                <div class="card border-0 bg-light h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <div class="metric-icon bg-success-subtle me-2">
+                                                <i class="fas fa-dollar-sign text-success"></i>
+                                            </div>
+                                            <h6 class="mb-0">Profit Growth</h6>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span>Annual Growth Rate:</span>
+                                            <span class="badge bg-success" id="profitAnnualGrowth">+20%</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span>End of Period Projection:</span>
+                                            <span class="text-success fw-bold" id="profitEndValue">$300,000</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span>Average Profit Margin:</span>
+                                            <span class="badge bg-success" id="avgProfitMargin">24%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Projection Data Table -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Projection Data</h5>
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-sm btn-outline-secondary" id="exportProjectionsCSV">
+                            <i class="fas fa-file-csv me-1"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="table-empty" class="text-center py-4">
+                        <p class="text-muted">Data will appear after generating projections.</p>
+                    </div>
+                    
+                    <div id="table-results" class="d-none">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Period</th>
+                                        <th class="text-end">Revenue</th>
+                                        <th class="text-end">Costs</th>
+                                        <th class="text-end">Profit</th>
+                                        <th class="text-end">Profit Margin</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="projectionTableBody">
+                                    <!-- Projection data will be inserted here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.metric-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.metric-icon i {
+    font-size: 16px;
+}
+</style>
+
+<!-- Include projection JavaScript -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script src="{{ url_for('static', filename='js/export_utils.js') }}"></script>
+{% include "projections/projections_js.html" %}
+
+<script>
+    // Set up projection export buttons
+    document.addEventListener('DOMContentLoaded', function() {
+        const exportButtons = document.querySelectorAll('.export-pdf, .export-excel, .export-csv');
+        exportButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Don't try to export if there's no projection data
+                if (!projectionData) {
+                    alert('Please generate projections first.');
+                    return;
+                }
+                
+                // Get format from class
+                let format;
+                if (this.classList.contains('export-pdf')) format = 'pdf';
+                else if (this.classList.contains('export-excel')) format = 'excel';
+                else if (this.classList.contains('export-csv')) format = 'csv';
+                else return;
+                
+                // Export data
+                FinGeniusExport.exportProjectionData(projectionData, format);
+            });
+        });
+        
+        // Set up CSV export button
+        document.getElementById('exportProjectionsCSV').addEventListener('click', function() {
+            if (!projectionData) {
+                alert('Please generate projections first.');
+                return;
+            }
+            
+            FinGeniusExport.exportProjectionData(projectionData, 'csv');
+        });
+    });
+</script>
+{% endblock %}

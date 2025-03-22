@@ -1,0 +1,466 @@
+<script>
+// What-If Analysis Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Store a reference to the chart
+    let whatIfChart = null;
+    
+    // Store baseline values for comparison
+    const baselineValues = {
+        revenueGrowth: 5,
+        costReduction: 0,
+        inflationRate: 3,
+        taxRate: 25,
+        interestRate: 5,
+        projectionYears: 3
+    };
+    
+    // Store baseline financial metrics for comparison
+    const baselineFinancials = {
+        cumulativeRevenue: 2000000,
+        projectedProfit: 680000,
+        avgProfitMargin: 0.203  // 20.3%
+    };
+    
+    // Initialize current scenario values
+    let currentScenario = {...baselineValues};
+    
+    // Define a list to store saved scenarios
+    const savedScenarios = [];
+    
+    // Initial financial data (our starting point)
+    const initialFinancialData = {
+        revenue: 650000,
+        expenses: 520000,
+        profit: 130000
+    };
+    
+    // Set up the event listeners for the sliders
+    function setupSliders() {
+        document.getElementById('revenueGrowth').addEventListener('input', function() {
+            document.getElementById('revenueGrowthValue').textContent = this.value + '%';
+            currentScenario.revenueGrowth = parseInt(this.value);
+            updateProjection();
+        });
+        
+        document.getElementById('costReduction').addEventListener('input', function() {
+            document.getElementById('costReductionValue').textContent = this.value + '%';
+            currentScenario.costReduction = parseInt(this.value);
+            updateProjection();
+        });
+        
+        document.getElementById('inflationRate').addEventListener('input', function() {
+            document.getElementById('inflationRateValue').textContent = this.value + '%';
+            currentScenario.inflationRate = parseFloat(this.value);
+            updateProjection();
+        });
+        
+        document.getElementById('taxRate').addEventListener('input', function() {
+            document.getElementById('taxRateValue').textContent = this.value + '%';
+            currentScenario.taxRate = parseInt(this.value);
+            updateProjection();
+        });
+        
+        document.getElementById('interestRate').addEventListener('input', function() {
+            document.getElementById('interestRateValue').textContent = this.value + '%';
+            currentScenario.interestRate = parseFloat(this.value);
+            updateProjection();
+        });
+        
+        document.getElementById('projectionYears').addEventListener('input', function() {
+            const years = parseInt(this.value);
+            document.getElementById('projectionYearsValue').textContent = years + (years === 1 ? ' year' : ' years');
+            currentScenario.projectionYears = years;
+            updateProjection();
+        });
+    }
+    
+    // Initialize the chart
+    function initWhatIfChart() {
+        const ctx = document.getElementById('whatIfChart').getContext('2d');
+        
+        whatIfChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Revenue',
+                        data: [],
+                        backgroundColor: 'rgba(66, 133, 244, 0.6)',
+                        borderColor: '#4285F4',
+                        borderWidth: 1,
+                        order: 3
+                    },
+                    {
+                        label: 'Expenses',
+                        data: [],
+                        backgroundColor: 'rgba(219, 68, 55, 0.6)',
+                        borderColor: '#DB4437',
+                        borderWidth: 1,
+                        order: 2
+                    },
+                    {
+                        label: 'Profit',
+                        data: [],
+                        type: 'line',
+                        backgroundColor: 'rgba(15, 157, 88, 0.1)',
+                        borderColor: '#0F9D58',
+                        borderWidth: 2,
+                        pointStyle: 'circle',
+                        pointRadius: 4,
+                        pointBackgroundColor: '#0F9D58',
+                        tension: 0.3,
+                        fill: 'origin',
+                        order: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += '$' + context.parsed.y.toLocaleString();
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Set up visibility toggles
+        document.getElementById('showRevenue').addEventListener('change', function() {
+            whatIfChart.data.datasets[0].hidden = !this.checked;
+            whatIfChart.update();
+        });
+        
+        document.getElementById('showExpenses').addEventListener('change', function() {
+            whatIfChart.data.datasets[1].hidden = !this.checked;
+            whatIfChart.update();
+        });
+        
+        document.getElementById('showProfit').addEventListener('change', function() {
+            whatIfChart.data.datasets[2].hidden = !this.checked;
+            whatIfChart.update();
+        });
+    }
+    
+    // Calculate financial projections based on scenario parameters
+    function calculateProjection(scenario) {
+        const years = scenario.projectionYears;
+        const labels = Array.from({length: years + 1}, (_, i) => i === 0 ? 'Current' : `Year ${i}`);
+        
+        let revenue = [initialFinancialData.revenue];
+        let expenses = [initialFinancialData.expenses];
+        let profit = [initialFinancialData.profit];
+        
+        // Calculate projections for each year
+        for (let year = 1; year <= years; year++) {
+            // Apply revenue growth (compounding)
+            const newRevenue = revenue[year - 1] * (1 + scenario.revenueGrowth / 100);
+            
+            // Apply expense changes: inflation, cost reduction
+            const inflationFactor = 1 + scenario.inflationRate / 100;
+            const costReductionFactor = 1 - scenario.costReduction / 100;
+            const newExpenses = expenses[year - 1] * inflationFactor * costReductionFactor;
+            
+            // Calculate profit before tax
+            const profitBeforeTax = newRevenue - newExpenses;
+            
+            // Apply tax and interest effects
+            const taxAmount = profitBeforeTax * (scenario.taxRate / 100);
+            const interestAmount = revenue[year - 1] * (scenario.interestRate / 100) / 10; // Simplified interest calculation
+            
+            const newProfit = profitBeforeTax - taxAmount - interestAmount;
+            
+            // Store values
+            revenue.push(Math.round(newRevenue));
+            expenses.push(Math.round(newExpenses));
+            profit.push(Math.round(newProfit));
+        }
+        
+        return {
+            labels,
+            revenue,
+            expenses,
+            profit,
+            cumulativeRevenue: revenue.reduce((sum, val) => sum + val, 0),
+            cumulativeProfit: profit.reduce((sum, val) => sum + val, 0),
+            avgProfitMargin: profit.reduce((sum, val, i) => i === 0 ? sum : sum + val / revenue[i], 0) / years
+        };
+    }
+    
+    // Update the projection chart and metrics
+    function updateProjection() {
+        const projection = calculateProjection(currentScenario);
+        
+        // Update chart
+        whatIfChart.data.labels = projection.labels;
+        whatIfChart.data.datasets[0].data = projection.revenue;
+        whatIfChart.data.datasets[1].data = projection.expenses;
+        whatIfChart.data.datasets[2].data = projection.profit;
+        whatIfChart.update();
+        
+        // Update summary metrics
+        document.getElementById('cumulativeRevenue').textContent = '$' + projection.cumulativeRevenue.toLocaleString();
+        document.getElementById('projectedProfit').textContent = '$' + projection.cumulativeProfit.toLocaleString();
+        document.getElementById('avgProfitMargin').textContent = (projection.avgProfitMargin * 100).toFixed(1) + '%';
+        
+        // Update change indicators
+        const revenueChange = ((projection.cumulativeRevenue / baselineFinancials.cumulativeRevenue) - 1) * 100;
+        const profitChange = ((projection.cumulativeProfit / baselineFinancials.projectedProfit) - 1) * 100;
+        const marginChange = (projection.avgProfitMargin - baselineFinancials.avgProfitMargin) * 100;
+        
+        updateChangeIndicator('revenueChangeIndicator', revenueChange, true);
+        updateChangeIndicator('profitChangeIndicator', profitChange, true);
+        updateChangeIndicator('marginChangeIndicator', marginChange, false);
+    }
+    
+    // Update a change indicator element
+    function updateChangeIndicator(elementId, changeValue, isPercentage) {
+        const element = document.getElementById(elementId);
+        const isPositive = changeValue >= 0;
+        const absChange = Math.abs(changeValue).toFixed(1);
+        
+        let displayText;
+        if (isPercentage) {
+            displayText = `${isPositive ? '+' : '-'}${absChange}% vs. baseline`;
+        } else {
+            displayText = `${isPositive ? '+' : '-'}${absChange} points`;
+        }
+        
+        const icon = isPositive 
+            ? '<i class="fas fa-caret-up text-success me-1"></i>' 
+            : '<i class="fas fa-caret-down text-danger me-1"></i>';
+        
+        element.innerHTML = icon + displayText;
+    }
+    
+    // Save the current scenario
+    function saveCurrentScenario() {
+        const scenarioName = prompt('Enter a name for this scenario:');
+        if (!scenarioName) return; // User cancelled
+        
+        // Create a scenario object
+        const scenario = {
+            name: scenarioName,
+            ...currentScenario,
+            date: new Date().toISOString()
+        };
+        
+        // Add to saved scenarios
+        savedScenarios.push(scenario);
+        
+        // Calculate financial metrics for this scenario
+        const projection = calculateProjection(scenario);
+        
+        // Add to the table
+        const tableBody = document.getElementById('scenariosTable').querySelector('tbody');
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${scenarioName}</td>
+            <td>${scenario.revenueGrowth}%</td>
+            <td>${scenario.costReduction}%</td>
+            <td>${scenario.inflationRate}%</td>
+            <td>$${projection.cumulativeProfit.toLocaleString()}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary load-scenario me-1" data-scenario-index="${savedScenarios.length - 1}">Load</button>
+                <button class="btn btn-sm btn-outline-danger delete-scenario" data-scenario-index="${savedScenarios.length - 1}">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+        
+        // Save to localStorage for persistence
+        try {
+            localStorage.setItem('whatIfScenarios', JSON.stringify(savedScenarios));
+        } catch (e) {
+            console.error('Failed to save scenarios to localStorage:', e);
+        }
+        
+        // Add event listener to the new load button
+        row.querySelector('.load-scenario').addEventListener('click', function() {
+            const index = parseInt(this.getAttribute('data-scenario-index'));
+            loadScenario(index);
+        });
+        
+        // Add event listener to the new delete button
+        row.querySelector('.delete-scenario').addEventListener('click', function() {
+            const index = parseInt(this.getAttribute('data-scenario-index'));
+            deleteScenario(index);
+        });
+    }
+    
+    // Load a saved scenario
+    function loadScenario(index) {
+        // If loading baseline
+        if (index === 'baseline') {
+            currentScenario = {...baselineValues};
+        } else {
+            // Load from saved scenarios
+            currentScenario = {...savedScenarios[index]};
+        }
+        
+        // Update UI sliders
+        document.getElementById('revenueGrowth').value = currentScenario.revenueGrowth;
+        document.getElementById('revenueGrowthValue').textContent = currentScenario.revenueGrowth + '%';
+        
+        document.getElementById('costReduction').value = currentScenario.costReduction;
+        document.getElementById('costReductionValue').textContent = currentScenario.costReduction + '%';
+        
+        document.getElementById('inflationRate').value = currentScenario.inflationRate;
+        document.getElementById('inflationRateValue').textContent = currentScenario.inflationRate + '%';
+        
+        document.getElementById('taxRate').value = currentScenario.taxRate;
+        document.getElementById('taxRateValue').textContent = currentScenario.taxRate + '%';
+        
+        document.getElementById('interestRate').value = currentScenario.interestRate;
+        document.getElementById('interestRateValue').textContent = currentScenario.interestRate + '%';
+        
+        document.getElementById('projectionYears').value = currentScenario.projectionYears;
+        document.getElementById('projectionYearsValue').textContent = 
+            currentScenario.projectionYears + (currentScenario.projectionYears === 1 ? ' year' : ' years');
+        
+        // Update projection with the loaded scenario
+        updateProjection();
+    }
+    
+    // Delete a saved scenario
+    function deleteScenario(index) {
+        if (!confirm('Are you sure you want to delete this scenario?')) return;
+        
+        // Remove from array
+        savedScenarios.splice(index, 1);
+        
+        // Redraw the entire table to update indices
+        refreshScenariosTable();
+        
+        // Save updated list to localStorage
+        try {
+            localStorage.setItem('whatIfScenarios', JSON.stringify(savedScenarios));
+        } catch (e) {
+            console.error('Failed to save scenarios to localStorage:', e);
+        }
+    }
+    
+    // Refresh the scenarios table
+    function refreshScenariosTable() {
+        const tableBody = document.getElementById('scenariosTable').querySelector('tbody');
+        
+        // Clear all rows except the baseline
+        while (tableBody.rows.length > 1) {
+            tableBody.deleteRow(1);
+        }
+        
+        // Add all saved scenarios
+        savedScenarios.forEach((scenario, index) => {
+            // Calculate financial metrics for this scenario
+            const projection = calculateProjection(scenario);
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${scenario.name}</td>
+                <td>${scenario.revenueGrowth}%</td>
+                <td>${scenario.costReduction}%</td>
+                <td>${scenario.inflationRate}%</td>
+                <td>$${projection.cumulativeProfit.toLocaleString()}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary load-scenario me-1" data-scenario-index="${index}">Load</button>
+                    <button class="btn btn-sm btn-outline-danger delete-scenario" data-scenario-index="${index}">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </td>
+            `;
+            tableBody.appendChild(row);
+            
+            // Add event listeners
+            row.querySelector('.load-scenario').addEventListener('click', function() {
+                loadScenario(index);
+            });
+            
+            row.querySelector('.delete-scenario').addEventListener('click', function() {
+                deleteScenario(index);
+            });
+        });
+    }
+    
+    // Load saved scenarios from localStorage
+    function loadSavedScenarios() {
+        try {
+            const savedData = localStorage.getItem('whatIfScenarios');
+            if (savedData) {
+                const loadedScenarios = JSON.parse(savedData);
+                savedScenarios.push(...loadedScenarios);
+                refreshScenariosTable();
+            }
+        } catch (e) {
+            console.error('Failed to load scenarios from localStorage:', e);
+        }
+    }
+    
+    // Initialize everything
+    function init() {
+        // Set up event listeners
+        setupSliders();
+        
+        // Initialize chart
+        initWhatIfChart();
+        
+        // Set up save button
+        document.getElementById('saveScenario').addEventListener('click', saveCurrentScenario);
+        
+        // Set up reset button
+        document.getElementById('resetScenario').addEventListener('click', function() {
+            loadScenario('baseline');
+        });
+        
+        // Set up baseline scenario
+        document.querySelector('.load-scenario[data-scenario="baseline"]').addEventListener('click', function() {
+            loadScenario('baseline');
+        });
+        
+        // Load saved scenarios
+        loadSavedScenarios();
+        
+        // Calculate initial projection
+        updateProjection();
+    }
+    
+    // Check if this section is in the DOM before initializing
+    if (document.getElementById('what-if-analysis')) {
+        init();
+    }
+});
+</script>

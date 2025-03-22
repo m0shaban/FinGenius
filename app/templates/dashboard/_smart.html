@@ -1,0 +1,193 @@
+<div class="row mb-4" id="smart-goals-section">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-bullseye text-primary me-2"></i>SMART Financial Goals
+                </h5>
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-sm btn-outline-primary me-2" id="addGoalBtn">
+                        <i class="fas fa-plus"></i> Add Goal
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Goals List -->
+                <div id="smart-goals-list">
+                    <div class="text-center p-4 text-muted" id="no-goals-message">
+                        <i class="fas fa-tasks fa-3x mb-3"></i>
+                        <h6>No financial goals added yet</h6>
+                        <p class="small">Click "Add Goal" to create your first SMART financial goal.</p>
+                    </div>
+                    
+                    <!-- Goals will be dynamically added here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Goal Modal -->
+<div class="modal fade" id="goalModal" tabindex="-1" aria-labelledby="goalModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="goalModalLabel">Add SMART Financial Goal</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="smartGoalForm">
+                    <input type="hidden" id="goalId" value="">
+                    
+                    <div class="mb-3">
+                        <label for="goalTitle" class="form-label">Goal Title</label>
+                        <input type="text" class="form-control" id="goalTitle" placeholder="e.g., Increase Emergency Fund" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="goalCategory" class="form-label">Category</label>
+                            <select class="form-select" id="goalCategory" required>
+                                <option value="">Select a category</option>
+                                <option value="Savings">Savings</option>
+                                <option value="Debt Reduction">Debt Reduction</option>
+                                <option value="Revenue Growth">Revenue Growth</option>
+                                <option value="Cost Reduction">Cost Reduction</option>
+                                <option value="Investment">Investment</option>
+                                <option value="Profitability">Profitability</option>
+                                <option value="Cash Flow">Cash Flow</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="goalPriority" class="form-label">Priority</label>
+                            <select class="form-select" id="goalPriority" required>
+                                <option value="High">High</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- SMART Fields -->
+                    <div class="mb-3">
+                        <label for="goalSpecific" class="form-label">Specific</label>
+                        <textarea class="form-control" id="goalSpecific" rows="2" placeholder="What exactly do you want to accomplish?" required></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="goalMeasurable" class="form-label">Measurable</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="goalMeasurableAmount" placeholder="Target amount" required min="1">
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="goalMeasurableCurrent" class="form-label">Current Progress</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="goalMeasurableCurrent" placeholder="Current amount" required min="0">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="goalAchievable" class="form-label">Achievable</label>
+                        <textarea class="form-control" id="goalAchievable" rows="2" placeholder="How can this goal be accomplished?" required></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="goalRelevant" class="form-label">Relevant</label>
+                        <textarea class="form-control" id="goalRelevant" rows="2" placeholder="Why is this goal important to your financial health?" required></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="goalTimebound" class="form-label">Time-bound</label>
+                            <input type="date" class="form-control" id="goalTimebound" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="goalRelatedMetric" class="form-label">Related Financial Metric</label>
+                            <select class="form-select" id="goalRelatedMetric">
+                                <option value="">None</option>
+                                <option value="Revenue">Revenue</option>
+                                <option value="Expenses">Expenses</option>
+                                <option value="Profit">Profit</option>
+                                <option value="Cash Flow">Cash Flow</option>
+                                <option value="Debt">Debt</option>
+                                <option value="Assets">Assets</option>
+                                <option value="Equity">Equity</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-danger me-auto" id="deleteGoalBtn">Delete</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveGoalBtn">Save Goal</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.goal-card {
+    margin-bottom: 1rem;
+    border-left: 4px solid;
+    transition: transform 0.2s;
+}
+.goal-card:hover {
+    transform: translateY(-3px);
+}
+.goal-card.priority-High {
+    border-left-color: #dc3545;
+}
+.goal-card.priority-Medium {
+    border-left-color: #fd7e14;
+}
+.goal-card.priority-Low {
+    border-left-color: #6c757d;
+}
+.goal-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+.goal-title {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+.goal-category {
+    font-size: 0.8rem;
+    margin-bottom: 0.75rem;
+}
+.goal-progress-container {
+    margin-bottom: 0.5rem;
+}
+.goal-progress-bar {
+    height: 10px;
+    border-radius: 5px;
+    transition: width 0.5s;
+}
+.goal-details {
+    font-size: 0.85rem;
+}
+.goal-details dt {
+    font-weight: 600;
+}
+.goal-details dd {
+    margin-bottom: 0.5rem;
+}
+.goal-actions {
+    margin-top: 1rem;
+}
+.goal-date {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+.goal-date.goal-overdue {
+    color: #dc3545;
+    font-weight: 600;
+}
+</style>

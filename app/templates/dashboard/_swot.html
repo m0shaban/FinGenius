@@ -1,0 +1,144 @@
+<div class="row mb-4" id="swot-analysis-section">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-balance-scale text-primary me-2"></i>SWOT Analysis
+                </h5>
+                <div class="d-flex">
+                    <button class="btn btn-sm btn-outline-primary me-2" id="editSwotBtn">
+                        <i class="fas fa-edit"></i> Edit Analysis
+                    </button>
+                    <button class="btn btn-sm btn-outline-success d-none" id="saveSwotBtn">
+                        <i class="fas fa-save"></i> Save Analysis
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- SWOT Analysis Grid -->
+                <div class="row">
+                    <!-- Strengths -->
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <div class="card h-100 border-0 shadow-sm swot-card swot-strengths">
+                            <div class="card-header bg-success-subtle">
+                                <h6 class="mb-0 text-success">
+                                    <i class="fas fa-shield-alt me-2"></i>Strengths
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="swot-view-mode">
+                                    <ul class="swot-list" id="strengths-list">
+                                        <li class="swot-empty-state text-muted">No strengths added yet.</li>
+                                    </ul>
+                                </div>
+                                <div class="swot-edit-mode d-none">
+                                    <textarea class="form-control swot-textarea" id="strengths-textarea" rows="6" placeholder="Enter each strength on a new line"></textarea>
+                                    <div class="form-text text-muted small">Examples: Strong cash reserves, Established client base, Low debt ratio</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Weaknesses -->
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <div class="card h-100 border-0 shadow-sm swot-card swot-weaknesses">
+                            <div class="card-header bg-danger-subtle">
+                                <h6 class="mb-0 text-danger">
+                                    <i class="fas fa-exclamation-circle me-2"></i>Weaknesses
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="swot-view-mode">
+                                    <ul class="swot-list" id="weaknesses-list">
+                                        <li class="swot-empty-state text-muted">No weaknesses added yet.</li>
+                                    </ul>
+                                </div>
+                                <div class="swot-edit-mode d-none">
+                                    <textarea class="form-control swot-textarea" id="weaknesses-textarea" rows="6" placeholder="Enter each weakness on a new line"></textarea>
+                                    <div class="form-text text-muted small">Examples: High operational costs, Seasonal cash flow, Limited growth capital</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Opportunities -->
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <div class="card h-100 border-0 shadow-sm swot-card swot-opportunities">
+                            <div class="card-header bg-primary-subtle">
+                                <h6 class="mb-0 text-primary">
+                                    <i class="fas fa-lightbulb me-2"></i>Opportunities
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="swot-view-mode">
+                                    <ul class="swot-list" id="opportunities-list">
+                                        <li class="swot-empty-state text-muted">No opportunities added yet.</li>
+                                    </ul>
+                                </div>
+                                <div class="swot-edit-mode d-none">
+                                    <textarea class="form-control swot-textarea" id="opportunities-textarea" rows="6" placeholder="Enter each opportunity on a new line"></textarea>
+                                    <div class="form-text text-muted small">Examples: New market expansion, Cost reduction initiatives, Strategic partnerships</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Threats -->
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <div class="card h-100 border-0 shadow-sm swot-card swot-threats">
+                            <div class="card-header bg-warning-subtle">
+                                <h6 class="mb-0 text-warning">
+                                    <i class="fas fa-bolt me-2"></i>Threats
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="swot-view-mode">
+                                    <ul class="swot-list" id="threats-list">
+                                        <li class="swot-empty-state text-muted">No threats added yet.</li>
+                                    </ul>
+                                </div>
+                                <div class="swot-edit-mode d-none">
+                                    <textarea class="form-control swot-textarea" id="threats-textarea" rows="6" placeholder="Enter each threat on a new line"></textarea>
+                                    <div class="form-text text-muted small">Examples: Rising interest rates, Increasing competition, Regulatory changes</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Last Updated Info -->
+                <div class="text-muted small mt-3" id="swot-last-updated">
+                    Last updated: <span>Never</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.swot-card {
+    transition: transform 0.2s;
+    height: 100%;
+}
+.swot-card:hover {
+    transform: translateY(-5px);
+}
+.swot-list {
+    padding-left: 1.5rem;
+    margin-bottom: 0;
+}
+.swot-list li {
+    margin-bottom: 0.5rem;
+}
+.swot-list li:last-child {
+    margin-bottom: 0;
+}
+.swot-empty-state {
+    list-style-type: none;
+    margin-left: -1.5rem;
+    font-style: italic;
+}
+.swot-textarea {
+    font-size: 0.9rem;
+}
+</style>
