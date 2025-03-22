@@ -16,6 +16,8 @@ required_packages = [
     'sqlalchemy',
     'pandas',
     'numpy',
+    'matplotlib',
+    'openai',
     'gunicorn',
     'python-dotenv'
 ]
