@@ -1,7 +1,6 @@
 <div align="center">
 
-![FinGenius Banner](https://placehold.co/1200x400/003366/FFFFFF/png?text=Project%20FinGenius)
-
+<a href="https://ibb.co/BKYpmCgm"><img src="https://i.ibb.co/YTVC6Lt6/Screenshot-908.png" alt="Screenshot-908" border="0"></a>
 # 💹 Project FinGenius: AI-Powered Financial Intelligence & Strategy Engine
 
 **A comprehensive web application designed to transform raw financial data into actionable strategic foresight, empowering businesses and organizations to make smarter, data-driven decisions.**
@@ -61,11 +60,10 @@ Project FinGenius is architected as an end-to-end **decision-support system** th
 
 ### 🖼️ Visual Demo
 
-*(A GIF showing the user journey is crucial: 1. Uploading a financial statement. 2. Viewing the interactive dashboard. 3. Running a 'What-If' scenario. 4. Receiving an AI-generated insight.)*
 
 <div align="center">
 
-![Animation of the FinGenius dashboard, forecasting tools, and AI insights.](https://placehold.co/800x450/003366/FFFFFF/gif?text=Live%20Application%20Demo)
+![Animation of the FinGenius dashboard, forecasting tools, and AI insights.](https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExdDRqbG1uNjVxZHo1YnJ5MGJ2dnV6NXJpd2I4cXU3YjgzeDU3a3hxZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/fpey3y3WOgsk6sJxS1/giphy.gif)
 
 </div>
 
